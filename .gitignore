@@ -8,6 +8,7 @@
 *.sublime-workspace
 */*.sublime-workspace
 .idea/
+.idea/*
 
 # Notes #
 #########

@@ -1,9 +1,9 @@
 # Algorand Esports Match Aggregator (AEMA) 
 
-This project contains the source for an oracle on the Algorand blockchain that provides recent esports match results. This project is licensed under the permissive zlib license. 
+This project contains the source for an oracle on the Algorand blockchain that provides recent esports match results. It is licensed under the permissive zlib license. 
 
 ### Project Structure
-The project is divided into modules: one core module and one module for each game. Each game module contains functions to fetch and aggregate match data and publish them on the blockchain. 
+The repo is divided into modules: one core module and one module for each game. Each game module contains functions to fetch and aggregate match data and publish them on the blockchain. 
 
 #### Core Module 
 
