@@ -1,0 +1,17 @@
+# Compiled source #
+###################
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.sublime-workspace
+*/*.sublime-workspace
+.idea/
+
+# Notes #
+#########
+notes.txt
+
+bin/
+logs/
