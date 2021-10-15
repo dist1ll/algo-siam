@@ -1,4 +1,4 @@
-package aema
+package core
 
 type AlgorandBuffer struct {
 }
