@@ -5,7 +5,7 @@ import (
 )
 
 func TestEnvironmentVariablesExist(t *testing.T) {
-	addr, token, key := GetAlgorandConfig()
+	addr, token, key := GetAlgorandEnvironmentVars()
 
 	if addr == "" {
 		t.Errorf("Env var %s not set or empty!", envURLNode)
