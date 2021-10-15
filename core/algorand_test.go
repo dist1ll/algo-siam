@@ -1,6 +1,8 @@
 package core
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestEnvironmentVariablesExist(t *testing.T) {
 	addr, token, key := GetAlgorandConfig()
@@ -11,7 +13,7 @@ func TestEnvironmentVariablesExist(t *testing.T) {
 	if token == "" {
 		t.Errorf("Env var %s not set or empty!", envAlgodToken)
 	}
-	if key == "" {
-		t.Errorf("Env var %s not set or empty!", envPrivateKey)
+	if len(key) == 0 {
+		t.Errorf("Env var %s not set, empty or incorrect! Pay attention to base64 encoding", envPrivateKey)
 	}
 }

@@ -15,7 +15,7 @@ func TestChainConnection(t *testing.T) {
 
 	addr, token, key := GetAlgorandConfig()
 
-	account, err := crypto.AccountFromPrivateKey([]byte(key))
+	account, err := crypto.AccountFromPrivateKey(key)
 
 	if err != nil {
 		t.Fatal("Error reading private key. Empty or not the right format.")
