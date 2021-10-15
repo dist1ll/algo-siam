@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -11,6 +12,11 @@ import (
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 )
 
+func TestAlgorandBufferCreation(t *testing.T) {
+	//_, private := GenerateBase64Keypair()
+	//ab, err := NewAlgorandBuffer("", "", private)
+
+}
 func TestChainConnection(t *testing.T) {
 
 	addr, token, _ := GetAlgorandEnvironmentVars()
@@ -47,9 +53,34 @@ func TestChainConnection(t *testing.T) {
 		return
 	}
 
-	_, _, err = crypto.SignTransaction(account.PrivateKey, txn)
+	/// Sign the transaction
+	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
 	if err != nil {
 		fmt.Printf("Failed to sign transaction: %s\n", err)
 		return
 	}
+	fmt.Printf("Signed txid: %s\n", txID)
+
+	// Submit the transaction
+	sendResponse, err := algodClient.SendRawTransaction(signedTxn).Do(context.Background())
+	if err != nil {
+		fmt.Printf("failed to send transaction: %s\n", err)
+		return
+	}
+	fmt.Printf("Submitted transaction %s\n", sendResponse)
+
+	// Wait for confirmation
+	confirmedTxn, err := waitForConfirmation(txID, algodClient, 4)
+	if err != nil {
+		fmt.Printf("Error waiting for confirmation on txID: %s\n", txID)
+		return
+	}
+
+	// Display completed transaction
+	txnJSON, err := json.MarshalIndent(confirmedTxn.Transaction.Txn, "", "\t")
+	if err != nil {
+		fmt.Printf("Can not marshall txn data: %s\n", err)
+	}
+	fmt.Printf("Transaction information: %s\n", txnJSON)
+	fmt.Printf("Decoded note: %s\n", string(confirmedTxn.Transaction.Txn.Note))
 }
