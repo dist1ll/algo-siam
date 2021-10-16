@@ -31,7 +31,7 @@ func TestChainConnection(t *testing.T) {
 		fmt.Printf("Error getting suggested tx params: %s\n", err)
 		return
 	}
-	return
+
 
 	fromAddr := account.Address.String()
 	toAddr := "TBCRT2557QUKJTQQHS2AWRXO7BUJQGB7ZAAKCWCM5G4SLFRBW5K5LXOTN4"
@@ -48,6 +48,7 @@ func TestChainConnection(t *testing.T) {
 		return
 	}
 
+	return
 	/// Sign the transaction
 	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
 	if err != nil {
