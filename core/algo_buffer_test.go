@@ -4,40 +4,35 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"testing"
 
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/transaction"
-
-	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 )
 
-func TestAlgorandBufferCreation(t *testing.T) {
-	//_, private := GenerateBase64Keypair()
-	//ab, err := NewAlgorandBuffer("", "", private)
-
-}
 func TestChainConnection(t *testing.T) {
 
-	addr, token, _ := GetAlgorandEnvironmentVars()
-
-	account, err := crypto.AccountFromPrivateKey(nil)
-
+	algobuf, err := NewAlgorandBufferFromEnv()
 	if err != nil {
-		t.Fatal("Error reading private key. Empty or not the right format.")
+		t.Errorf("error creating AlgorandBuffer: %s", err)
 	}
 
-	algodClient, err := algod.MakeClient(addr, token)
-	if err != nil {
-		t.Fatalf("Issue with creating algod client: %s\n", err)
-		return
-	}
+	account := algobuf.Account
+	algodClient := algobuf.Client
 
+	algobuf.Client, _ = algod.MakeClient(algobuf.Addr, algobuf.Token)
+	err = algobuf.VerifyToken()
+	if err != nil {
+		t.Error(err)
+	}
 	txParams, err := algodClient.SuggestedParams().Do(context.Background())
 	if err != nil {
 		fmt.Printf("Error getting suggested tx params: %s\n", err)
 		return
 	}
+	return
+
 	fromAddr := account.Address.String()
 	toAddr := "TBCRT2557QUKJTQQHS2AWRXO7BUJQGB7ZAAKCWCM5G4SLFRBW5K5LXOTN4"
 	var amount uint64 = 5000000

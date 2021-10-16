@@ -1,19 +1,19 @@
 package core
 
 import (
+	"context"
 	"encoding/base64"
+
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
 type AlgorandBuffer struct {
-	Addr string
-	Token string
+	Addr    string
+	Token   string
 	Account crypto.Account
-	Client *algod.Client
-
+	Client  *algod.Client
 }
-
 
 // NewAlgorandBuffer creates a new instance of AlgorandBuffer.
 func NewAlgorandBuffer(addr string, token string, base64key string) (*AlgorandBuffer, error) {
@@ -33,11 +33,29 @@ func NewAlgorandBuffer(addr string, token string, base64key string) (*AlgorandBu
 		return nil, err
 	}
 
-	return &AlgorandBuffer{Client: algodClient, Account: account}, err
+	return &AlgorandBuffer{
+		Addr:    addr,
+		Token:   token,
+		Client:  algodClient,
+		Account: account,
+	}, err
 }
 
 // NewAlgorandBufferFromEnv creates
 func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	addr, token, base64key := GetAlgorandEnvironmentVars()
 	return NewAlgorandBuffer(addr, token, base64key)
+}
+
+// VerifyToken checks whether the URL and provided API token resolve to a correct
+// Algorand node instance.
+func (ab *AlgorandBuffer) VerifyToken() error {
+	// status requires valid API token
+	_, err := ab.Client.Status().Do(context.Background())
+	return err
+}
+
+// Health returns nil if node is online and healthy
+func (ab *AlgorandBuffer) Health() error {
+	return ab.Client.HealthCheck().Do(context.Background())
 }
