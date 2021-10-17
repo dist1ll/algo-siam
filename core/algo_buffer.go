@@ -3,13 +3,15 @@ package core
 import (
 	"context"
 	"encoding/base64"
-
+	"errors"
+	"fmt"
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
+	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
 type AlgorandBuffer struct {
-	Addr    string
+	Addr    string // Addr is the address of the app creator.
 	Token   string
 	Account crypto.Account
 	Client  *algod.Client
@@ -58,4 +60,21 @@ func (ab *AlgorandBuffer) VerifyToken() error {
 // Health returns nil if node is online and healthy
 func (ab *AlgorandBuffer) Health() error {
 	return ab.Client.HealthCheck().Do(context.Background())
+}
+
+// GetApplication returns the application that handles the algo buffer. Returns an error
+// if the associated address Addr has zero or more than one application.
+func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
+	info, err := ab.Client.AccountInformation(ab.Addr).Do(context.Background())
+	if err != nil {
+		return models.Application{}, err
+	}
+	if len(info.CreatedApps) == 0 {
+		return models.Application{}, errors.New(fmt.Sprintf("account <%s> has no applications", info.Address))
+	}
+	if len(info.CreatedApps) > 1 {
+		return models.Application{}, errors.New(fmt.Sprintf("account <%s> has more than 1 application", info.Address))
+	}
+
+	return info.CreatedApps[0], nil
 }

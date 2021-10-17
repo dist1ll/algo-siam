@@ -19,6 +19,10 @@ const envAlgodToken = "AEMA_ALGOD_TOKEN"
 // envPrivateKey is the Base64 encoded private key of our targeted account or application.
 const envPrivateKey = "AEMA_PRIVATE_KEY"
 
+type AlgorandClient interface {
+	VerifyToken() error
+	Health() error
+}
 
 // GetAlgorandEnvironmentVars returns a config tuple needed to interact with the Algorand node.
 //  addr: URL of the Algorand node

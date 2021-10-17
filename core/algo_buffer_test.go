@@ -54,7 +54,8 @@ func TestChainConnection(t *testing.T) {
 	// comment out the next two (2) lines to use suggested fees
 	params.FlatFee = true
 	params.Fee = 1000
-
+	info := algobuf.Client.AccountInformation(algobuf.Addr).Do(context.Background())
+	info.CreatedApps
 	// create unsigned transaction
 	//b, err := ioutil.ReadFile("./scripts/approval.teal") // just pass the file name
     //if err != nil {
