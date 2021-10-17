@@ -1,7 +1,11 @@
 #samplecontract.py
-from pyteal import *
-from algosdk import *
+import base64
 
+import algosdk
+from algosdk.future import transaction
+from algosdk.v2client import algod
+from pyteal import *
+from algosdk.v2client.models import *
 """Basic Counter Application"""
 
 def approval_program():
@@ -75,11 +79,6 @@ def compile_program(client, source_code):
     compile_response = client.compile(source_code)
     return base64.b64decode(compile_response['result'])
 
-# helper function that converts a mnemonic passphrase into a private signing key
-def get_private_key_from_mnemonic(mn) :
-    private_key = mnemonic.to_private_key(mn)
-    return private_key
-
 # helper function that waits for a given txid to be confirmed by the network
 def wait_for_confirmation(client, transaction_id, timeout):
     """
@@ -141,8 +140,7 @@ def read_global_state(client, addr, app_id):
 # create new application
 def create_app(client, private_key, approval_program, clear_program, global_schema, local_schema):
     # define sender as creator
-    sender = account.address_from_private_key(private_key)
-
+    sender = algosdk.account.address_from_private_key(private_key)
     # declare on_complete as NoOp
     on_complete = transaction.OnComplete.NoOpOC.real
 
@@ -151,9 +149,9 @@ def create_app(client, private_key, approval_program, clear_program, global_sche
 
     # create unsigned transaction
     txn = transaction.ApplicationCreateTxn(sender, params, on_complete, \
-                                            approval_program, clear_program, \
+                                            b"#pragma version 3", clear_program, \
                                             global_schema, local_schema)
-
+    return
     # sign transaction
     signed_txn = txn.sign(private_key)
     tx_id = signed_txn.transaction.get_txid()
@@ -183,7 +181,7 @@ def main() :
     local_bytes = 0
     global_ints = 1 
     global_bytes = 0
-    global_schema = transaction.StateSchema(global_ints, global_bytes)
+    global_schema = ApplicationStateSchema(global_ints, global_bytes)
     local_schema = transaction.StateSchema(local_ints, local_bytes)
 
     # compile program to TEAL assembly
@@ -197,7 +195,7 @@ def main() :
         f.write(clear_state_program_teal)
 
     # compile program to binary
-    approval_program_compiled = compile_program(algod_client, approval_program_teal)
+    # approval_program_compiled = compile_program(algod_client, approval_program_teal)
 
     # compile program to binary
     clear_state_program_compiled = compile_program(algod_client, clear_state_program_teal)
@@ -206,7 +204,7 @@ def main() :
     print("Deploying Counter application......")
 
     # create new application
-    app_id = create_app(algod_client, creator_private_key, approval_program_compiled, clear_state_program_compiled, global_schema, local_schema)
+    app_id = create_app(algod_client, creator_private_key, None, clear_state_program_compiled, global_schema, local_schema)
 
     # read global state of application
     print("Global state:", read_global_state(algod_client, account.address_from_private_key(creator_private_key), app_id))
