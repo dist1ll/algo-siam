@@ -78,3 +78,8 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 
 	return info.CreatedApps[0], nil
 }
+
+// GetBuffer returns the stored global state of this buffers algorand application
+func (ab *AlgorandBuffer) GetBuffer() map[string]string {
+	return nil
+}
