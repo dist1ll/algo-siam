@@ -18,7 +18,7 @@ const AlgorandDefaultTimeout time.Duration = time.Second * 5
 type AlgorandBuffer struct {
 	URL           string // URL is the address of the app creator.
 	Token         string
-	App           models.Application
+	AppId         uint64
 	Account       crypto.Account
 	Client        *algod.Client
 	timeoutLength time.Duration
@@ -60,10 +60,11 @@ func NewAlgorandBuffer(URL string, token string, base64key string) (*AlgorandBuf
 		return nil, fmt.Errorf("error verifying token: %w", err)
 	}
 
-	buffer.App, err = buffer.GetApplication()
+	app, err := buffer.GetApplication()
 	if err != nil {
 		return nil, fmt.Errorf("error querying app: %w", err)
 	}
+	buffer.AppId = app.Id
 
 	return buffer, err
 }
@@ -84,9 +85,9 @@ func (ab *AlgorandBuffer) VerifyToken() error {
 
 // Health returns nil if node is online and healthy
 func (ab *AlgorandBuffer) Health() error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
 	err := ab.Client.HealthCheck().Do(ctx)
-
+	cancel()
 	// Null-response of health check means node is ok!
 	if _, ok := err.(*json.InvalidUnmarshalError); ok {
 		return nil
@@ -112,7 +113,17 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 }
 
 // GetBuffer returns the stored global state of this buffers algorand application
-func (ab *AlgorandBuffer) GetBuffer() map[string]string {
+func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error){
+	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
+	app, err := ab.Client.GetApplicationByID(ab.AppId).Do(ctx)
+	cancel()
+	if err != nil {
+		return nil, err
+	}
 
-	return nil
+	m := make(map[string]string)
+	for _, kv := range app.Params.GlobalState {
+		m[kv.Key] = kv.Value.Bytes
+	}
+	return m, nil
 }

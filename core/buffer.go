@@ -3,8 +3,8 @@ package core
 // The AEMA buffer is the primary persistence interface to store match data.
 // The buffer can be implemented as local storage, cloud storage or on a blockchain.
 type Buffer interface {
-	GetBuffer() map[string]string
-	StoreModifiedBuffer()
+	GetBuffer() (map[string]string, error)
+	StoreBuffer(map[string]string)
 }
 
 // Implements an AEMA buffer as local, in-memory storage
@@ -18,6 +18,6 @@ func CreateStorageBuffer() StorageBuffer {
 	return sb
 }
 
-func (b *StorageBuffer) GetBuffer() map[string]string {
-	return b.Buffer
+func (b *StorageBuffer) GetBuffer() (map[string]string, error) {
+	return b.Buffer, nil
 }
