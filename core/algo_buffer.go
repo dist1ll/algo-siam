@@ -103,7 +103,7 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 		return models.Application{}, err
 	}
 	if len(info.CreatedApps) == 0 {
-		return models.Application{}, errors.New(fmt.Sprintf("account <%s> has no applications", info.Address))
+		return models.Application{}, &NoApplication{Account: ab.Account}
 	}
 	if len(info.CreatedApps) > 1 {
 		return models.Application{}, errors.New(fmt.Sprintf("account <%s> has more than 1 application", info.Address))
@@ -113,7 +113,7 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 }
 
 // GetBuffer returns the stored global state of this buffers algorand application
-func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error){
+func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
 	app, err := ab.Client.GetApplicationByID(ab.AppId).Do(ctx)
 	cancel()
