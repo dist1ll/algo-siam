@@ -3,22 +3,29 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
+const AlgorandDefaultTimeout time.Duration = time.Second * 5
+
 type AlgorandBuffer struct {
-	Addr    string // Addr is the address of the app creator.
-	Token   string
-	Account crypto.Account
-	Client  *algod.Client
+	URL           string // URL is the address of the app creator.
+	Token         string
+	App           models.Application
+	Account       crypto.Account
+	Client        *algod.Client
+	timeoutLength time.Duration
 }
 
-// NewAlgorandBuffer creates a new instance of AlgorandBuffer.
-func NewAlgorandBuffer(addr string, token string, base64key string) (*AlgorandBuffer, error) {
+// NewAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
+func NewAlgorandBuffer(URL string, token string, base64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(base64key)
 	if err != nil {
@@ -30,23 +37,41 @@ func NewAlgorandBuffer(addr string, token string, base64key string) (*AlgorandBu
 		return nil, err
 	}
 
-	algodClient, err := algod.MakeClient(addr, token)
+	algodClient, err := algod.MakeClient(URL, token)
 	if err != nil {
 		return nil, err
 	}
 
-	return &AlgorandBuffer{
-		Addr:    addr,
-		Token:   token,
-		Client:  algodClient,
-		Account: account,
-	}, err
+	buffer := &AlgorandBuffer{
+		URL:           URL,
+		Token:         token,
+		Client:        algodClient,
+		Account:       account,
+		timeoutLength: AlgorandDefaultTimeout,
+	}
+
+	err = buffer.Health()
+	if err != nil {
+		return nil, fmt.Errorf("error checking health: %w", err)
+	}
+
+	err = buffer.VerifyToken()
+	if err != nil {
+		return nil, fmt.Errorf("error verifying token: %w", err)
+	}
+
+	buffer.App, err = buffer.GetApplication()
+	if err != nil {
+		return nil, fmt.Errorf("error querying app: %w", err)
+	}
+
+	return buffer, err
 }
 
 // NewAlgorandBufferFromEnv creates
 func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
-	addr, token, base64key := GetAlgorandEnvironmentVars()
-	return NewAlgorandBuffer(addr, token, base64key)
+	url, token, base64key := GetAlgorandEnvironmentVars()
+	return NewAlgorandBuffer(url, token, base64key)
 }
 
 // VerifyToken checks whether the URL and provided API token resolve to a correct
@@ -59,13 +84,20 @@ func (ab *AlgorandBuffer) VerifyToken() error {
 
 // Health returns nil if node is online and healthy
 func (ab *AlgorandBuffer) Health() error {
-	return ab.Client.HealthCheck().Do(context.Background())
+	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	err := ab.Client.HealthCheck().Do(ctx)
+
+	// Null-response of health check means node is ok!
+	if _, ok := err.(*json.InvalidUnmarshalError); ok {
+		return nil
+	}
+	return err
 }
 
 // GetApplication returns the application that handles the algo buffer. Returns an error
-// if the associated address Addr has zero or more than one application.
+// if the associated address URL has zero or more than one application.
 func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
-	info, err := ab.Client.AccountInformation(ab.Addr).Do(context.Background())
+	info, err := ab.Client.AccountInformation(ab.Account.Address.String()).Do(context.Background())
 	if err != nil {
 		return models.Application{}, err
 	}
@@ -81,5 +113,6 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 
 // GetBuffer returns the stored global state of this buffers algorand application
 func (ab *AlgorandBuffer) GetBuffer() map[string]string {
+
 	return nil
 }

@@ -29,11 +29,8 @@ func TestChainConnection(t *testing.T) {
 	if err != nil {
 		t.Errorf("error creating AlgorandBuffer: %s", err)
 	}
+	return
 
-	err = algobuf.VerifyToken()
-	if err != nil {
-		t.Error(err)
-	}
 	_, err = algobuf.Client.SuggestedParams().Do(context.Background())
 	if err != nil {
 		fmt.Printf("Error getting suggested tx params: %s\n", err)
