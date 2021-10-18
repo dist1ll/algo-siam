@@ -26,6 +26,10 @@ type AlgorandClient interface {
 	GetApplicationByID(uint64, context.Context) (models.Application, error)
 }
 
+// AlgorandClientWrapper implements the AlgorandClient interface by wrapping the original
+// algod.Client
+type AlgorandClientWrapper struct{}
+
 // GetAlgorandEnvironmentVars returns a config tuple needed to interact with the Algorand node.
 //  addr: URL of the Algorand node
 //  token: API token for the algod endpoint
