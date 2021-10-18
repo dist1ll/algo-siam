@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -106,7 +105,7 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 		return models.Application{}, &NoApplication{Account: ab.Account}
 	}
 	if len(info.CreatedApps) > 1 {
-		return models.Application{}, errors.New(fmt.Sprintf("account <%s> has more than 1 application", info.Address))
+		return models.Application{}, &TooManyApplications{Account: ab.Account}
 	}
 
 	return info.CreatedApps[0], nil
