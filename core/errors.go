@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 

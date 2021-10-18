@@ -111,6 +111,10 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 	return info.CreatedApps[0], nil
 }
 
+func (ab *AlgorandBuffer) CreateApplication() error {
+	return nil
+}
+
 // GetBuffer returns the stored global state of this buffers algorand application
 func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
