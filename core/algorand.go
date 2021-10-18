@@ -20,9 +20,10 @@ const envAlgodToken = "AEMA_ALGOD_TOKEN"
 // envPrivateKey is the Base64 encoded private key of our targeted account or application.
 const envPrivateKey = "AEMA_PRIVATE_KEY"
 
+// AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
-	VerifyToken() error
-	Health() error
+	AccountInformation(string, context.Context) (models.Account, error)
+	GetApplicationByID(uint64, context.Context) (models.Application, error)
 }
 
 // GetAlgorandEnvironmentVars returns a config tuple needed to interact with the Algorand node.
