@@ -63,12 +63,6 @@ func NewAlgorandBuffer(c AlgorandClient, base64key string) (*AlgorandBuffer, err
 		return buffer, fmt.Errorf("error verifying token: %w", err)
 	}
 
-	app, err := buffer.GetApplication()
-	if err != nil {
-		return buffer, fmt.Errorf("error querying app: %w", err)
-	}
-	buffer.AppId = app.Id
-
 	return buffer, err
 }
 

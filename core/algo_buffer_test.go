@@ -10,17 +10,15 @@ func TestChainAppCreationDeletion(t *testing.T) {
 	a, err := NewAlgorandBufferFromEnv()
 	//  func()*NoApplication{return &NoApplication{}}()
 
+
 	if e := &(NoApplication{}); errors.As(err, &e) {
 		t.Logf("no apps registered under %s", e.Account.Address)
 		err = a.CreateApplication()
 		if err != nil {
 			t.Fatalf("Couldn't create application %s", err)
 		}
-		return
 	} else if e := &(TooManyApplications{}); errors.As(err, &e) {
-		t.Logf("Too many applications. Deleting App: %d", e.Apps[0].Id)
-		err = a.DeleteApplication(e.Apps[0].Id)
-		return
+		t.Fatalf("too many applications registered under {%s}", e.Account.Address)
 	} else if err != nil {
 		t.Fatalf("fatal error %s", err)
 	}
