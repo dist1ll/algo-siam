@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"github.com/algorand/go-algorand-sdk/types"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
@@ -16,6 +17,10 @@ type AlgorandClientWrapper struct {
 func CreateAlgorandClientWrapper(URL string, token string) (*AlgorandClientWrapper, error) {
 	c, err := algod.MakeClient(URL, token)
 	return &AlgorandClientWrapper{Client: c}, err
+}
+
+func (a *AlgorandClientWrapper) SuggestedParams(ctx context.Context) (types.SuggestedParams, error) {
+	return a.Client.SuggestedParams().Do(ctx)
 }
 
 func (a *AlgorandClientWrapper) HealthCheck(ctx context.Context) error {

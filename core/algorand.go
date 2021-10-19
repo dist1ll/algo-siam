@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/algorand/go-algorand-sdk/types"
 	"os"
 	"strings"
 
@@ -22,6 +23,7 @@ const envPrivateKey = "AEMA_PRIVATE_KEY"
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
+	SuggestedParams(ctx context.Context) (types.SuggestedParams, error)
 	HealthCheck(ctx context.Context) error
 	Status(ctx context.Context) (models.NodeStatus, error)
 	AccountInformation(string, context.Context) (models.Account, error)

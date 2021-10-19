@@ -42,24 +42,25 @@ func NewAlgorandBuffer(c AlgorandClient, base64key string) (*AlgorandBuffer, err
 
 	err = buffer.Health()
 	if err != nil {
-		return nil, fmt.Errorf("error checking health: %w", err)
+		return buffer, fmt.Errorf("error checking health: %w", err)
 	}
 
 	err = buffer.VerifyToken()
 	if err != nil {
-		return nil, fmt.Errorf("error verifying token: %w", err)
+		return buffer, fmt.Errorf("error verifying token: %w", err)
 	}
 
 	app, err := buffer.GetApplication()
 	if err != nil {
-		return nil, fmt.Errorf("error querying app: %w", err)
+		return buffer, fmt.Errorf("error querying app: %w", err)
 	}
 	buffer.AppId = app.Id
 
 	return buffer, err
 }
 
-// NewAlgorandBufferFromEnv creates
+// NewAlgorandBufferFromEnv creates an AlgorandBuffer from environment
+// variables. See README.md for more information.
 func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	url, token, base64key := GetAlgorandEnvironmentVars()
 	a, err := core.CreateAlgorandClientWrapper(url, token)
