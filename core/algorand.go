@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
@@ -23,11 +22,15 @@ const envPrivateKey = "AEMA_PRIVATE_KEY"
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
-	SuggestedParams(ctx context.Context) (types.SuggestedParams, error)
-	HealthCheck(ctx context.Context) error
-	Status(ctx context.Context) (models.NodeStatus, error)
+	SuggestedParams(context.Context) (types.SuggestedParams, error)
+	HealthCheck(context.Context) error
+	Status(context.Context) (models.NodeStatus, error)
+	StatusAfterBlock(uint64, context.Context) (models.NodeStatus, error)
 	AccountInformation(string, context.Context) (models.Account, error)
 	GetApplicationByID(uint64, context.Context) (models.Application, error)
+	SendRawTransaction([]byte, context.Context) (string, error)
+	PendingTransactionInformation(string, context.Context) (models.PendingTransactionInfoResponse, types.SignedTxn, error)
+	TealCompile([]byte, context.Context) (models.CompileResponse, error)
 }
 
 // GetAlgorandEnvironmentVars returns a config tuple needed to interact with the Algorand node.
@@ -46,8 +49,18 @@ func GenerateBase64Keypair() (public string, private string) {
 	return account.Address.String(), base64.StdEncoding.EncodeToString(account.PrivateKey)
 }
 
+func compileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
+	compileResponse, err := client.TealCompile(program, context.Background())
+	if err != nil {
+		fmt.Printf("Issue with compile: %s\n", err)
+		return
+	}
+	compiledProgram, _ = base64.StdEncoding.DecodeString(compileResponse.Result)
+	return compiledProgram
+}
+
 // Utility function that waits for a given txId to be confirmed by the network
-func waitForConfirmation(txID string, client *algod.Client, timeout uint64) (models.PendingTransactionInfoResponse, error) {
+func waitForConfirmation(txID string, client AlgorandClient, timeout uint64) (models.PendingTransactionInfoResponse, error) {
 	pt := new(models.PendingTransactionInfoResponse)
 	if client == nil || txID == "" || timeout < 0 {
 		fmt.Printf("Bad arguments for waitForConfirmation")
@@ -56,7 +69,7 @@ func waitForConfirmation(txID string, client *algod.Client, timeout uint64) (mod
 
 	}
 
-	status, err := client.Status().Do(context.Background())
+	status, err := client.Status(context.Background())
 	if err != nil {
 		fmt.Printf("error getting algod status: %s\n", err)
 		var msg = errors.New(strings.Join([]string{"error getting algod status: "}, err.Error()))
@@ -66,7 +79,7 @@ func waitForConfirmation(txID string, client *algod.Client, timeout uint64) (mod
 	currentRound := startRound
 
 	for currentRound < (startRound + timeout) {
-		*pt, _, err = client.PendingTransactionInformation(txID).Do(context.Background())
+		*pt, _, err = client.PendingTransactionInformation(txID, context.Background())
 		if err != nil {
 			fmt.Printf("error getting pending transaction: %s\n", err)
 			var msg = errors.New(strings.Join([]string{"error getting pending transaction: "}, err.Error()))
@@ -82,7 +95,7 @@ func waitForConfirmation(txID string, client *algod.Client, timeout uint64) (mod
 			return *pt, msg
 		}
 		fmt.Printf("waiting for confirmation\n")
-		status, err = client.StatusAfterBlock(currentRound).Do(context.Background())
+		status, err = client.StatusAfterBlock(currentRound, context.Background())
 		currentRound++
 	}
 	msg := errors.New("Tx not found in round range")

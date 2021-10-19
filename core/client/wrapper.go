@@ -31,10 +31,26 @@ func (a *AlgorandClientWrapper) Status(ctx context.Context) (models.NodeStatus, 
 	return a.Client.Status().Do(ctx)
 }
 
+func (a *AlgorandClientWrapper) StatusAfterBlock(round uint64, ctx context.Context) (response models.NodeStatus, err error) {
+	return a.Client.StatusAfterBlock(round).Do(ctx)
+}
+
 func (a *AlgorandClientWrapper) AccountInformation(s string, ctx context.Context) (models.Account, error) {
 	return a.Client.AccountInformation(s).Do(ctx)
 }
 
 func (a *AlgorandClientWrapper) GetApplicationByID(id uint64, ctx context.Context) (models.Application, error) {
 	return a.Client.GetApplicationByID(id).Do(ctx)
+}
+
+func (a *AlgorandClientWrapper) SendRawTransaction(txn []byte, ctx context.Context) (string, error) {
+	return a.Client.SendRawTransaction(txn).Do(ctx)
+}
+
+func (a *AlgorandClientWrapper) PendingTransactionInformation(txid string, ctx context.Context) (models.PendingTransactionInfoResponse, types.SignedTxn, error) {
+	return a.Client.PendingTransactionInformation(txid).Do(ctx)
+}
+
+func (a *AlgorandClientWrapper) TealCompile(b []byte, ctx context.Context) (response models.CompileResponse, err error) {
+	return a.Client.TealCompile(b).Do(ctx)
 }

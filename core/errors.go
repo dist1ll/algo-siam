@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 
+	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
+
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
@@ -20,6 +22,7 @@ func (e *NoApplication) Error() string {
 // account that has more than 1 application registered.
 type TooManyApplications struct {
 	Account crypto.Account
+	Apps    []models.Application
 }
 
 func (e *TooManyApplications) Error() string {

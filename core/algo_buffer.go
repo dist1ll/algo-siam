@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/algorand/go-algorand-sdk/future"
+	"github.com/algorand/go-algorand-sdk/types"
 	core "github.com/m2q/aema/core/client"
 	"time"
 
@@ -12,12 +14,23 @@ import (
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
+// Schema of AlgorandBuffer.
+const localInts = 0
+const localBytes = 0
+const globalInts = 0
+const globalBytes = 64
+
 const AlgorandDefaultTimeout time.Duration = time.Second * 5
 
 type AlgorandBuffer struct {
+	// AppId is the ID of Algorand application this buffer publishes to.
 	AppId         uint64
+	// Account is the owner of the buffer's Algorand application.
 	Account       crypto.Account
+	// Client is the wrapping interface for communicating with the node
 	Client        AlgorandClient
+	// timeoutLength is the default duration for Client requests like
+	// Health() or Status() to timeout.
 	timeoutLength time.Duration
 }
 
@@ -101,14 +114,10 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 		return models.Application{}, &NoApplication{Account: ab.Account}
 	}
 	if len(info.CreatedApps) > 1 {
-		return models.Application{}, &TooManyApplications{Account: ab.Account}
+		return models.Application{}, &TooManyApplications{Account: ab.Account, Apps: info.CreatedApps}
 	}
 
 	return info.CreatedApps[0], nil
-}
-
-func (ab *AlgorandBuffer) CreateApplication() error {
-	return nil
 }
 
 // GetBuffer returns the stored global state of this buffers algorand application
@@ -125,4 +134,78 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 		m[kv.Key] = kv.Value.Bytes
 	}
 	return m, nil
+}
+
+func (ab *AlgorandBuffer) CreateApplication() error {
+	_, err := ab.Client.SuggestedParams(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting suggested tx params: %s", err)
+	}
+
+	globalSchema := types.StateSchema{NumUint: uint64(globalInts), NumByteSlice: uint64(globalBytes)}
+	localSchema := types.StateSchema{NumUint: uint64(localInts), NumByteSlice: uint64(localBytes)}
+	params, _ := ab.Client.SuggestedParams(context.Background())
+	// comment out the next two (2) lines to use suggested fees
+	params.FlatFee = true
+	params.Fee = 1000
+
+	//b, err := ioutil.ReadFile("./scripts/approval.teal") // just pass the file name
+    //if err != nil {
+    //   fmt.Print(err)
+    //}
+	appr := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
+    clear := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
+
+	txn, _ := future.MakeApplicationCreateTx(false, appr, clear, globalSchema, localSchema,
+		nil, nil, nil, nil, params, ab.Account.Address, nil,
+		types.Digest{}, [32]byte{}, types.Address{})
+
+	//txn, _ = future.MakeApplicationDeleteTx(5, nil, nil, nil, nil,
+	//	params, ab.Account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+
+	// Sign the transaction
+	txID, signedTxn, _ := crypto.SignTransaction(ab.Account.PrivateKey, txn)
+	fmt.Printf("Signed txid: %s\n", txID)
+
+	// Submit the transaction
+	sendResponse, _ := ab.Client.SendRawTransaction(signedTxn, context.Background())
+	fmt.Printf("Submitted transaction %s\n", sendResponse)
+
+	// Wait for confirmation
+	waitForConfirmation(txID, ab.Client, 5)
+
+	// display results
+	confirmedTxn, _, _ := ab.Client.PendingTransactionInformation(txID, context.Background())
+	appId := confirmedTxn.ApplicationIndex
+	fmt.Printf("Created new app-id: %d\n", appId)
+	return nil
+}
+
+func (ab *AlgorandBuffer) DeleteApplication(appId uint64) error {
+	_, err := ab.Client.SuggestedParams(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting suggested tx params: %s", err)
+	}
+
+	params, _ := ab.Client.SuggestedParams(context.Background())
+	params.FlatFee = true
+	params.Fee = 1000
+
+	txn, _ := future.MakeApplicationDeleteTx(appId, nil, nil, nil, nil,
+		params, ab.Account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+
+	// Sign the transaction
+	txID, signedTxn, _ := crypto.SignTransaction(ab.Account.PrivateKey, txn)
+	fmt.Printf("Signed txid: %s\n", txID)
+
+	// Submit the transaction
+	sendResponse, _ := ab.Client.SendRawTransaction(signedTxn, context.Background())
+	fmt.Printf("Submitted transaction %s\n", sendResponse)
+
+	// Wait for confirmation
+	waitForConfirmation(txID, ab.Client, 5)
+
+	// display results
+	_, _, err = ab.Client.PendingTransactionInformation(txID, context.Background())
+	return err
 }
