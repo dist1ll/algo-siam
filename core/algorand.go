@@ -22,6 +22,8 @@ const envPrivateKey = "AEMA_PRIVATE_KEY"
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
+	HealthCheck(ctx context.Context) error
+	Status(ctx context.Context) (models.NodeStatus, error)
 	AccountInformation(string, context.Context) (models.Account, error)
 	GetApplicationByID(uint64, context.Context) (models.Application, error)
 }
