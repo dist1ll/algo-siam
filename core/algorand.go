@@ -32,11 +32,11 @@ type AlgorandClient interface {
 //  addr: URL of the Algorand node
 //  token: API token for the algod endpoint
 //  base64key: Base64-encoded private key of the Algorand application
-func GetAlgorandEnvironmentVars() (addr string, token string, base64key string) {
-	addr = os.Getenv(envURLNode)
+func GetAlgorandEnvironmentVars() (URL string, token string, base64key string) {
+	URL = os.Getenv(envURLNode)
 	token = os.Getenv(envAlgodToken)
 	base64key = os.Getenv(envPrivateKey)
-	return addr, token, base64key
+	return URL, token, base64key
 }
 
 func GenerateBase64Keypair() (public string, private string) {

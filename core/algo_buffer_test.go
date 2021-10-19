@@ -3,16 +3,9 @@ package core
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
-	"testing"
-
-	"github.com/algorand/go-algorand-sdk/types"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
-
-	"github.com/algorand/go-algorand-sdk/crypto"
-	"github.com/algorand/go-algorand-sdk/future"
 )
 
 func compileProgram(client *algod.Client, programSource string) (compiledProgram []byte) {
@@ -25,6 +18,7 @@ func compileProgram(client *algod.Client, programSource string) (compiledProgram
 	return compiledProgram
 }
 
+/*
 func TestChainAppCreationDeletion(t *testing.T) {
 	algobuf, err := NewAlgorandBufferFromEnv()
 	//  func()*NoApplication{return &NoApplication{}}()
@@ -147,3 +141,4 @@ func TestChainConnection(t *testing.T) {
 	appId := confirmedTxn.ApplicationIndex
 	fmt.Printf("Created new app-id: %d\n", appId)
 }
+*/

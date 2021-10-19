@@ -10,7 +10,12 @@ import (
 // AlgorandClientWrapper implements the AlgorandClient interface by wrapping the original
 // algod.Client
 type AlgorandClientWrapper struct {
-	Client algod.Client
+	Client *algod.Client
+}
+
+func CreateAlgorandClientWrapper(URL string, token string) (*AlgorandClientWrapper, error) {
+	c, err := algod.MakeClient(URL, token)
+	return &AlgorandClientWrapper{Client: c}, err
 }
 
 func (a *AlgorandClientWrapper) HealthCheck(ctx context.Context) error {
