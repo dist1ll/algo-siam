@@ -46,7 +46,7 @@ func (a *AlgorandMock) wrapExecutionCondition(i interface{}, def interface{}, f 
 	return i, nil
 }
 
-func CreateAlgorandClientSimpleMock(URL string, token string) *AlgorandMock {
+func CreateAlgorandClientMock(URL string, token string) *AlgorandMock {
 	err := make(map[string]bool)
 	return &AlgorandMock{ErrorFunctions: err}
 }

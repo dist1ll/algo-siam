@@ -6,7 +6,7 @@ import (
 )
 
 func TestAlgorandMock_ErrorFunctions(t *testing.T) {
-	client := CreateAlgorandClientSimpleMock("", "")
+	client := CreateAlgorandClientMock("", "")
 
 	client.SetError(true, (*AlgorandMock).AccountInformation, (*AlgorandMock).GetApplicationByID)
 

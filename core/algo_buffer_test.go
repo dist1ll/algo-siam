@@ -2,8 +2,25 @@ package core
 
 import (
 	"errors"
+	"github.com/m2q/aema/core/client"
 	"testing"
+	//"github.com/stretchr/testify"
 )
+
+
+// If the HealthCheck is not working, return error upon buffer creation
+func TestAlgorandBuffer_NoHealth(t *testing.T) {
+	client := core.CreateAlgorandClientMock("", "")
+	client.SetError(false, (*core.AlgorandMock).HealthCheck)
+
+	_, err := NewAlgorandBuffer(client, GeneratePrivateKey64())
+	if err != nil {
+		t.Errorf("failing health check doesn't return error %s", err)
+	}
+
+	// buffer should still have created account
+
+}
 
 
 func TestChainAppCreationDeletion(t *testing.T) {

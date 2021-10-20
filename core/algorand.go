@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/types"
 	"os"
 	"strings"
@@ -41,6 +42,12 @@ func GetAlgorandEnvironmentVars() (URL string, token string, base64key string) {
 	token = os.Getenv(envAlgodToken)
 	base64key = os.Getenv(envPrivateKey)
 	return URL, token, base64key
+}
+
+// GeneratePrivateKey64 returns a random, base64-encoded private key.
+func GeneratePrivateKey64() string {
+	acc := crypto.GenerateAccount()
+	return base64.StdEncoding.EncodeToString(acc.PrivateKey)
 }
 
 func compileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
