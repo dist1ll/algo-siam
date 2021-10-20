@@ -5,10 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand-sdk/types"
 	core "github.com/m2q/aema/core/client"
-	"time"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
@@ -24,14 +25,16 @@ const AlgorandDefaultTimeout time.Duration = time.Second * 5
 
 type AlgorandBuffer struct {
 	// AppId is the ID of Algorand application this buffer publishes to.
-	AppId         uint64
+	AppId uint64
 	// Account is the owner of the buffer's Algorand application.
-	Account       crypto.Account
+	Account crypto.Account
 	// Client is the wrapping interface for communicating with the node
-	Client        AlgorandClient
+	Client AlgorandClient
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
+	//
+	init bool
 }
 
 // NewAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
@@ -144,11 +147,11 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 	params.Fee = 1000
 
 	//b, err := ioutil.ReadFile("./scripts/approval.teal") // just pass the file name
-    //if err != nil {
-    //   fmt.Print(err)
-    //}
+	//if err != nil {
+	//   fmt.Print(err)
+	//}
 	appr := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
-    clear := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
+	clear := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
 
 	txn, _ := future.MakeApplicationCreateTx(false, appr, clear, globalSchema, localSchema,
 		nil, nil, nil, nil, params, ab.Account.Address, nil,
