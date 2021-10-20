@@ -5,8 +5,9 @@ import (
 	"testing"
 )
 
-func TestAlgorandMock(t *testing.T) {
+func TestAlgorandMock_ErrorFunctions(t *testing.T) {
 	client := CreateAlgorandClientSimpleMock("", "")
+
 	client.SetError(true, (*AlgorandMock).AccountInformation, (*AlgorandMock).GetApplicationByID)
 
 	if _, err := client.AccountInformation("", context.Background()); err == nil {

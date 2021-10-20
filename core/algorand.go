@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
-	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
 // Environment variable names for Algorand
@@ -42,11 +41,6 @@ func GetAlgorandEnvironmentVars() (URL string, token string, base64key string) {
 	token = os.Getenv(envAlgodToken)
 	base64key = os.Getenv(envPrivateKey)
 	return URL, token, base64key
-}
-
-func GenerateBase64Keypair() (public string, private string) {
-	account := crypto.GenerateAccount()
-	return account.Address.String(), base64.StdEncoding.EncodeToString(account.PrivateKey)
 }
 
 func compileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
