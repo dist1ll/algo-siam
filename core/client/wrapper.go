@@ -2,7 +2,10 @@ package core
 
 import (
 	"context"
+	"github.com/algorand/go-algorand-sdk/crypto"
+	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand-sdk/types"
+	"github.com/m2q/aema/core"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
@@ -53,4 +56,39 @@ func (a *AlgorandClientWrapper) PendingTransactionInformation(txid string, ctx c
 
 func (a *AlgorandClientWrapper) TealCompile(b []byte, ctx context.Context) (response models.CompileResponse, err error) {
 	return a.Client.TealCompile(b).Do(ctx)
+}
+
+func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint64) error {
+	_, err := a.SuggestedParams(context.Background())
+	if err != nil {
+		return err
+	}
+
+	params, err := a.SuggestedParams(context.Background())
+	if err != nil {
+		return err
+	}
+	params.FlatFee = true
+	params.Fee = 1000
+
+	txn, _ := future.MakeApplicationDeleteTx(appId, nil, nil, nil, nil,
+		params, acc.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+
+	_, signedTxn, err := crypto.SignTransaction(acc.PrivateKey, txn)
+	if err != nil {
+		return err
+	}
+
+	txID, err := a.SendRawTransaction(signedTxn, context.Background())
+	if err != nil {
+		return err
+	}
+
+	_, err = core.WaitForConfirmation(txID, a, 5)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = a.PendingTransactionInformation(txID, context.Background())
+	return err
 }

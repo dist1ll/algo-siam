@@ -174,7 +174,7 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 	fmt.Printf("Submitted transaction %s\n", sendResponse)
 
 	// Wait for confirmation
-	waitForConfirmation(txID, ab.Client, 5)
+	WaitForConfirmation(txID, ab.Client, 5)
 
 	// display results
 	confirmedTxn, _, _ := ab.Client.PendingTransactionInformation(txID, context.Background())
@@ -205,7 +205,7 @@ func (ab *AlgorandBuffer) DeleteApplication(appId uint64) error {
 	fmt.Printf("Submitted transaction %s\n", sendResponse)
 
 	// Wait for confirmation
-	waitForConfirmation(txID, ab.Client, 5)
+	WaitForConfirmation(txID, ab.Client, 5)
 
 	// display results
 	_, _, err = ab.Client.PendingTransactionInformation(txID, context.Background())

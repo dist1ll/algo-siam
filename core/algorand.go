@@ -5,10 +5,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/algorand/go-algorand-sdk/crypto"
-	"github.com/algorand/go-algorand-sdk/types"
 	"os"
 	"strings"
+
+	"github.com/algorand/go-algorand-sdk/crypto"
+	"github.com/algorand/go-algorand-sdk/types"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
@@ -31,6 +32,11 @@ type AlgorandClient interface {
 	SendRawTransaction([]byte, context.Context) (string, error)
 	PendingTransactionInformation(string, context.Context) (models.PendingTransactionInfoResponse, types.SignedTxn, error)
 	TealCompile([]byte, context.Context) (models.CompileResponse, error)
+
+	// DeleteApplication deletes an application with given ID from a given account.
+	// If the account has no apps, or none of its apps have the correct ID, then an
+	// error is returned.
+	DeleteApplication(crypto.Account, uint64) error
 }
 
 // GetAlgorandEnvironmentVars returns a config tuple needed to interact with the Algorand node.
@@ -61,7 +67,7 @@ func compileProgram(client AlgorandClient, program []byte) (compiledProgram []by
 }
 
 // Utility function that waits for a given txId to be confirmed by the network
-func waitForConfirmation(txID string, client AlgorandClient, timeout uint64) (models.PendingTransactionInfoResponse, error) {
+func WaitForConfirmation(txID string, client AlgorandClient, timeout uint64) (models.PendingTransactionInfoResponse, error) {
 	pt := new(models.PendingTransactionInfoResponse)
 	if client == nil || txID == "" || timeout < 0 {
 		fmt.Printf("Bad arguments for waitForConfirmation")

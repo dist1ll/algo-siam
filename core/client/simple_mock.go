@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"github.com/algorand/go-algorand-sdk/crypto"
 	"reflect"
 	"runtime"
 
@@ -123,4 +124,17 @@ func (a *AlgorandMock) PendingTransactionInformation(string, context.Context) (m
 func (a *AlgorandMock) TealCompile([]byte, context.Context) (models.CompileResponse, error) {
 	ret, err := a.wrapExecutionCondition(a.CompileResponse, models.CompileResponse{}, (*AlgorandMock).TealCompile)
 	return ret.(models.CompileResponse), err
+}
+
+
+func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error {
+	l := len(a.Account.CreatedApps)
+	for idx, app := range a.Account.CreatedApps {
+		if app.Id == appId {
+			a.Account.CreatedApps[idx] = a.Account.CreatedApps[l - 1]
+			a.Account.CreatedApps = a.Account.CreatedApps[:l-1]
+			return nil
+		}
+	}
+	return errors.New("no app with given id found")
 }
