@@ -25,8 +25,8 @@ const ApprovalProg = "#pragma version 4\n" +
 type AlgorandBuffer struct {
 	// AppId is the ID of Algorand application this buffer publishes to.
 	AppId uint64
-	// Account is the owner of the buffer's Algorand application.
-	Account crypto.Account
+	// AccountCrypt is the owner of the buffer's Algorand application.
+	AccountCrypt crypto.Account
 	// Client is the wrapping interface for communicating with the node
 	Client client.AlgorandClient
 	// timeoutLength is the default duration for Client requests like
@@ -51,7 +51,7 @@ func NewAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuff
 
 	buffer := &AlgorandBuffer{
 		Client:        c,
-		Account:       account,
+		AccountCrypt:  account,
 		timeoutLength: AlgorandDefaultTimeout,
 	}
 
@@ -102,15 +102,15 @@ func (ab *AlgorandBuffer) Health() error {
 // GetApplication returns the application that handles the algo buffer. Returns an error
 // if the associated address URL has zero or more than one application.
 func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
-	info, err := ab.Client.AccountInformation(ab.Account.Address.String(), context.Background())
+	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
 	if err != nil {
 		return models.Application{}, err
 	}
 	if len(info.CreatedApps) == 0 {
-		return models.Application{}, &NoApplication{Account: ab.Account}
+		return models.Application{}, &NoApplication{Account: ab.AccountCrypt}
 	}
 	if len(info.CreatedApps) > 1 {
-		return models.Application{}, &TooManyApplications{Account: ab.Account, Apps: info.CreatedApps}
+		return models.Application{}, &TooManyApplications{Account: ab.AccountCrypt, Apps: info.CreatedApps}
 	}
 
 	return info.CreatedApps[0], nil
@@ -153,14 +153,14 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 	clear := client.CompileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
 
 	txn, _ := future.MakeApplicationCreateTx(false, appr, clear, globalSchema, localSchema,
-		nil, nil, nil, nil, params, ab.Account.Address, nil,
+		nil, nil, nil, nil, params, ab.AccountCrypt.Address, nil,
 		types.Digest{}, [32]byte{}, types.Address{})
 
 	//txn, _ = future.MakeApplicationDeleteTx(5, nil, nil, nil, nil,
-	//	params, ab.Account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+	//	params, ab.AccountCrypt.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
 
 	// Sign the transaction
-	txID, signedTxn, _ := crypto.SignTransaction(ab.Account.PrivateKey, txn)
+	txID, signedTxn, _ := crypto.SignTransaction(ab.AccountCrypt.PrivateKey, txn)
 	fmt.Printf("Signed txid: %s\n", txID)
 
 	// Submit the transaction
@@ -177,31 +177,13 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 	return nil
 }
 
-func (ab *AlgorandBuffer) DeleteApplication(appId uint64) error {
-	_, err := ab.Client.SuggestedParams(context.Background())
-	if err != nil {
-		return fmt.Errorf("error getting suggested tx params: %s", err)
-	}
+// Manage is a constantly running routine that manages the lifecycle of
+// the AlgorandBuffer. It performs continuous checks against the node,
+// smart contract, application state and funding amount. Manage takes care
+// of asynchronous buffer writes, by queueing and writing them when the node
+// is available.
+//
+//
+func (ab *AlgorandBuffer) Manage() {
 
-	params, _ := ab.Client.SuggestedParams(context.Background())
-	params.FlatFee = true
-	params.Fee = 1000
-
-	txn, _ := future.MakeApplicationDeleteTx(appId, nil, nil, nil, nil,
-		params, ab.Account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
-
-	// Sign the transaction
-	txID, signedTxn, _ := crypto.SignTransaction(ab.Account.PrivateKey, txn)
-	fmt.Printf("Signed txid: %s\n", txID)
-
-	// Submit the transaction
-	sendResponse, _ := ab.Client.SendRawTransaction(signedTxn, context.Background())
-	fmt.Printf("Submitted transaction %s\n", sendResponse)
-
-	// Wait for confirmation
-	client.WaitForConfirmation(txID, ab.Client, 5)
-
-	// display results
-	_, _, err = ab.Client.PendingTransactionInformation(txID, context.Background())
-	return err
 }

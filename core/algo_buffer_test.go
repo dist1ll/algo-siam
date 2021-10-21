@@ -27,7 +27,7 @@ func TestAlgorandBuffer_NoHealth(t *testing.T) {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
 	// buffer should still have created account
-	assert.NotEqual(t, models.Account{}, buffer.Account)
+	assert.NotEqual(t, models.Account{}, buffer.AccountCrypt)
 }
 
 // If the Token Verification is not working, return error upon buffer creation
@@ -39,7 +39,7 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 		t.Errorf("failing token verification doesn't return error %s", err)
 	}
 	// buffer should still have created account
-	assert.NotEqual(t, models.Account{}, buffer.Account)
+	assert.NotEqual(t, models.Account{}, buffer.AccountCrypt)
 }
 
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
@@ -51,13 +51,16 @@ func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	}
 
 	go buffer.Manage()
+
 	acc, _ := c.AccountInformation("", nil)
 	for len(acc.CreatedApps) != 1 && client.FulfillsSchema(acc.CreatedApps[0]) {
 		acc, _ = c.AccountInformation("", nil)
-		break
 	}
 }
 
+func TestAlgorandBuffer_RequireManagement(t *testing.T) {
+
+}
 func TestChainAppCreationDeletion(t *testing.T) {
 	return
 	a, err := NewAlgorandBufferFromEnv()
