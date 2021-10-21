@@ -23,6 +23,11 @@ const globalBytes = 64
 
 const AlgorandDefaultTimeout time.Duration = time.Second * 5
 
+const ApprovalProg = "#pragma version 4\n" +
+	"addr Sender\n" +
+	"addr CreatorAddress\n" +
+	"=="
+
 type AlgorandBuffer struct {
 	// AppId is the ID of Algorand application this buffer publishes to.
 	AppId uint64

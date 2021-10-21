@@ -42,6 +42,12 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 	assert.NotEqual(t, models.Account{}, buffer.Account)
 }
 
+func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
+	client := core.CreateAlgorandClientMock("", "")
+	client.CreateDummyApps(6, 18, 32)
+
+}
+
 func TestChainAppCreationDeletion(t *testing.T) {
 	return
 	a, err := NewAlgorandBufferFromEnv()

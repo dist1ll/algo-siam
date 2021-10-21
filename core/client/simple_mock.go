@@ -24,6 +24,7 @@ type AlgorandMock struct {
 	SignedTXN         types.SignedTxn
 	CompileResponse   models.CompileResponse
 	ErrorFunctions    map[string]bool
+
 }
 
 // wrapExecutionCondition wraps the execution of an AlgorandMock function and
@@ -61,6 +62,13 @@ func (a *AlgorandMock) SetError(val bool, f ...interface{}) {
 	}
 }
 
+// CreateDummyApps adds applications with given IDs to the account.
+func (a *AlgorandMock) CreateDummyApps(ids ...uint64) {
+	a.Account.CreatedApps = make([]models.Application, len(ids))
+	for i, val := range ids {
+		a.Account.CreatedApps[i] = models.Application{Id: val}
+	}
+}
 // ClearFunctionErrors resets the error function map to its default.
 func (a *AlgorandMock) ClearFunctionErrors() {
 	a.ErrorFunctions = make(map[string]bool)
