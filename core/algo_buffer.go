@@ -9,7 +9,7 @@ import (
 
 	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand-sdk/types"
-	core "github.com/m2q/aema/core/client"
+	client "github.com/m2q/aema/core/client"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
@@ -34,7 +34,7 @@ type AlgorandBuffer struct {
 	// Account is the owner of the buffer's Algorand application.
 	Account crypto.Account
 	// Client is the wrapping interface for communicating with the node
-	Client AlgorandClient
+	Client client.AlgorandClient
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
@@ -43,7 +43,7 @@ type AlgorandBuffer struct {
 }
 
 // NewAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
-func NewAlgorandBuffer(c AlgorandClient, base64key string) (*AlgorandBuffer, error) {
+func NewAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(base64key)
 	if err != nil {
@@ -78,7 +78,7 @@ func NewAlgorandBuffer(c AlgorandClient, base64key string) (*AlgorandBuffer, err
 // variables. See README.md for more information.
 func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	url, token, base64key := GetAlgorandEnvironmentVars()
-	a, err := core.CreateAlgorandClientWrapper(url, token)
+	a, err := client.CreateAlgorandClientWrapper(url, token)
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +155,8 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 	//if err != nil {
 	//   fmt.Print(err)
 	//}
-	appr := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
-	clear := compileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
+	appr := client.CompileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
+	clear := client.CompileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
 
 	txn, _ := future.MakeApplicationCreateTx(false, appr, clear, globalSchema, localSchema,
 		nil, nil, nil, nil, params, ab.Account.Address, nil,
@@ -174,7 +174,7 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 	fmt.Printf("Submitted transaction %s\n", sendResponse)
 
 	// Wait for confirmation
-	WaitForConfirmation(txID, ab.Client, 5)
+	client.WaitForConfirmation(txID, ab.Client, 5)
 
 	// display results
 	confirmedTxn, _, _ := ab.Client.PendingTransactionInformation(txID, context.Background())
@@ -205,7 +205,7 @@ func (ab *AlgorandBuffer) DeleteApplication(appId uint64) error {
 	fmt.Printf("Submitted transaction %s\n", sendResponse)
 
 	// Wait for confirmation
-	WaitForConfirmation(txID, ab.Client, 5)
+	client.WaitForConfirmation(txID, ab.Client, 5)
 
 	// display results
 	_, _, err = ab.Client.PendingTransactionInformation(txID, context.Background())

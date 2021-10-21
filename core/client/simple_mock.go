@@ -1,4 +1,4 @@
-package core
+package client
 
 import (
 	"context"
@@ -129,6 +129,9 @@ func (a *AlgorandMock) TealCompile([]byte, context.Context) (models.CompileRespo
 
 func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error {
 	l := len(a.Account.CreatedApps)
+	if l < 1 {
+		return errors.New("no applications")
+	}
 	for idx, app := range a.Account.CreatedApps {
 		if app.Id == appId {
 			a.Account.CreatedApps[idx] = a.Account.CreatedApps[l - 1]

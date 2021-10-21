@@ -1,14 +1,12 @@
-package core
+package client
 
 import (
 	"context"
+	"github.com/algorand/go-algorand-sdk/client/v2/algod"
+	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand-sdk/types"
-	"github.com/m2q/aema/core"
-
-	"github.com/algorand/go-algorand-sdk/client/v2/algod"
-	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
 
 // AlgorandClientWrapper implements the AlgorandClient interface by wrapping the original
@@ -84,7 +82,7 @@ func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint
 		return err
 	}
 
-	_, err = core.WaitForConfirmation(txID, a, 5)
+	_, err = WaitForConfirmation(txID, a, 5)
 	if err != nil {
 		return err
 	}
@@ -92,3 +90,4 @@ func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint
 	_, _, err = a.PendingTransactionInformation(txID, context.Background())
 	return err
 }
+

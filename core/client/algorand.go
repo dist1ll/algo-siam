@@ -1,11 +1,10 @@
-package core
+package client
 
 import (
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/algorand/go-algorand-sdk/crypto"
@@ -14,12 +13,6 @@ import (
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
 
-// Environment variable names for Algorand
-const envURLNode = "AEMA_URL_NODE"
-const envAlgodToken = "AEMA_ALGOD_TOKEN"
-
-// envPrivateKey is the Base64 encoded private key of our targeted account or application.
-const envPrivateKey = "AEMA_PRIVATE_KEY"
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
@@ -39,24 +32,13 @@ type AlgorandClient interface {
 	DeleteApplication(crypto.Account, uint64) error
 }
 
-// GetAlgorandEnvironmentVars returns a config tuple needed to interact with the Algorand node.
-//  addr: URL of the Algorand node
-//  token: API token for the algod endpoint
-//  base64key: Base64-encoded private key of the Algorand application
-func GetAlgorandEnvironmentVars() (URL string, token string, base64key string) {
-	URL = os.Getenv(envURLNode)
-	token = os.Getenv(envAlgodToken)
-	base64key = os.Getenv(envPrivateKey)
-	return URL, token, base64key
-}
-
 // GeneratePrivateKey64 returns a random, base64-encoded private key.
 func GeneratePrivateKey64() string {
 	acc := crypto.GenerateAccount()
 	return base64.StdEncoding.EncodeToString(acc.PrivateKey)
 }
 
-func compileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
+func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
 	compileResponse, err := client.TealCompile(program, context.Background())
 	if err != nil {
 		fmt.Printf("Issue with compile: %s\n", err)

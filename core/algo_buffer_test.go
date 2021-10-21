@@ -2,7 +2,7 @@ package core
 
 import (
 	"errors"
-	core "github.com/m2q/aema/core/client"
+	"github.com/m2q/aema/core/client"
 	"testing"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
@@ -11,8 +11,8 @@ import (
 
 // If HealthCheck and token verification works, expect no errors
 func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
-	client := core.CreateAlgorandClientMock("", "")
-	_, err := NewAlgorandBuffer(client, GeneratePrivateKey64())
+	c := client.CreateAlgorandClientMock("", "")
+	_, err := NewAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err != nil {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
@@ -20,9 +20,9 @@ func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 
 // If the HealthCheck is not working, return error upon buffer creation
 func TestAlgorandBuffer_NoHealth(t *testing.T) {
-	client := core.CreateAlgorandClientMock("", "")
-	client.SetError(true, (*core.AlgorandMock).HealthCheck)
-	buffer, err := NewAlgorandBuffer(client, GeneratePrivateKey64())
+	c := client.CreateAlgorandClientMock("", "")
+	c.SetError(true, (*client.AlgorandMock).HealthCheck)
+	buffer, err := NewAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err == nil {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
@@ -32,9 +32,9 @@ func TestAlgorandBuffer_NoHealth(t *testing.T) {
 
 // If the Token Verification is not working, return error upon buffer creation
 func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
-	client := core.CreateAlgorandClientMock("", "")
-	client.SetError(true, (*core.AlgorandMock).Status)
-	buffer, err := NewAlgorandBuffer(client, GeneratePrivateKey64())
+	c := client.CreateAlgorandClientMock("", "")
+	c.SetError(true, (*client.AlgorandMock).Status)
+	buffer, err := NewAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err == nil {
 		t.Errorf("failing token verification doesn't return error %s", err)
 	}
@@ -43,8 +43,8 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 }
 
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
-	client := core.CreateAlgorandClientMock("", "")
-	client.CreateDummyApps(6, 18, 32)
+	c := client.CreateAlgorandClientMock("", "")
+	c.CreateDummyApps(6, 18, 32)
 
 }
 
