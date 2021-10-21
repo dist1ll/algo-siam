@@ -36,8 +36,8 @@ type AlgorandBuffer struct {
 	init bool
 }
 
-// NewAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
-func NewAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
+// CreateAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
+func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(base64key)
 	if err != nil {
@@ -68,15 +68,15 @@ func NewAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuff
 	return buffer, err
 }
 
-// NewAlgorandBufferFromEnv creates an AlgorandBuffer from environment
+// CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment
 // variables. See README.md for more information.
-func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
+func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	url, token, base64key := GetAlgorandEnvironmentVars()
 	a, err := client.CreateAlgorandClientWrapper(url, token)
 	if err != nil {
 		return nil, err
 	}
-	return NewAlgorandBuffer(a, base64key)
+	return CreateAlgorandBuffer(a, base64key)
 }
 
 // VerifyToken checks whether the URL and provided API token resolve to a correct
@@ -185,5 +185,7 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 //
 //
 func (ab *AlgorandBuffer) Manage() {
+	for true {
 
+	}
 }
