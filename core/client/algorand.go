@@ -14,6 +14,12 @@ import (
 )
 
 
+// Schema of AlgorandBuffer.
+const localInts = 0
+const localBytes = 0
+const globalInts = 0
+const globalBytes = 64
+
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
 	SuggestedParams(context.Context) (types.SuggestedParams, error)
@@ -36,6 +42,25 @@ type AlgorandClient interface {
 func GeneratePrivateKey64() string {
 	acc := crypto.GenerateAccount()
 	return base64.StdEncoding.EncodeToString(acc.PrivateKey)
+}
+
+func GenerateSchemas() (types.StateSchema, types.StateSchema) {
+	globalSchema := types.StateSchema{NumUint: uint64(globalInts), NumByteSlice: uint64(globalBytes)}
+	localSchema := types.StateSchema{NumUint: uint64(localInts), NumByteSlice: uint64(localBytes)}
+	return localSchema, globalSchema
+}
+
+func FulfillsSchema(app models.Application) bool {
+	if app.Id == 0 {
+		return false
+	}
+	if app.Params.GlobalStateSchema.NumByteSlice != 64 {
+		return false
+	}
+	if app.Params.GlobalStateSchema.NumUint != 0 {
+		return false
+	}
+	return true
 }
 
 func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {

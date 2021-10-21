@@ -9,17 +9,11 @@ import (
 
 	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand-sdk/types"
-	client "github.com/m2q/aema/core/client"
+	"github.com/m2q/aema/core/client"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
-
-// Schema of AlgorandBuffer.
-const localInts = 0
-const localBytes = 0
-const globalInts = 0
-const globalBytes = 64
 
 const AlgorandDefaultTimeout time.Duration = time.Second * 5
 
@@ -144,8 +138,8 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 		return fmt.Errorf("error getting suggested tx params: %s", err)
 	}
 
-	globalSchema := types.StateSchema{NumUint: uint64(globalInts), NumByteSlice: uint64(globalBytes)}
-	localSchema := types.StateSchema{NumUint: uint64(localInts), NumByteSlice: uint64(localBytes)}
+	localSchema, globalSchema := client.GenerateSchemas()
+
 	params, _ := ab.Client.SuggestedParams(context.Background())
 	// comment out the next two (2) lines to use suggested fees
 	params.FlatFee = true

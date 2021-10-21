@@ -45,7 +45,17 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
+	buffer, err := NewAlgorandBuffer(c, client.GeneratePrivateKey64())
+	if err != nil {
+		t.Error(err)
+	}
 
+	go buffer.Manage()
+	acc, _ := c.AccountInformation("", nil)
+	for len(acc.CreatedApps) != 1 && client.FulfillsSchema(acc.CreatedApps[0]) {
+		acc, _ = c.AccountInformation("", nil)
+		break
+	}
 }
 
 func TestChainAppCreationDeletion(t *testing.T) {
