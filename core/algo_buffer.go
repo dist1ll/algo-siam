@@ -123,6 +123,9 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 
 // GetBuffer returns the stored global state of this buffers algorand application
 func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
+	if !ab.currentlyManaged {
+		panic("need to run 'go buffer.Manage()' before being able to store")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
 	app, err := ab.Client.GetApplicationByID(ab.AppId, ctx)
 	cancel()

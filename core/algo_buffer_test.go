@@ -41,16 +41,20 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 	assert.NotEqual(t, models.Account{}, buffer.AccountCrypt)
 }
 
-// Without calling buffer's Manage() function, storing on the buffer is invalid
-// and should result in a panic
+// Without calling buffer's Manage() function, storing on and loading from
+// the buffer is invalid and should result in a panic
 func TestAlgorandBuffer_RequireManagement(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
-	shouldPanic := func() {
+	shouldPanicGet := func() {
+		_, _ = buffer.GetBuffer()
+	}
+	shouldPanicStore := func() {
 		buffer.StoreBuffer(make(map[string]string, 3))
 	}
-	assert.Panics(t, shouldPanic)
+	assert.Panics(t, shouldPanicGet)
+	assert.Panics(t, shouldPanicStore)
 }
 
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
