@@ -57,6 +57,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	buffer := &AlgorandBuffer{
 		Client:        c,
 		AccountCrypt:  account,
+		AppChannel: make(chan string),
 		timeoutLength: AlgorandDefaultTimeout,
 	}
 
@@ -200,4 +201,34 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 //
 func (ab *AlgorandBuffer) Manage() {
 	ab.currentlyManaged = true
+	minSleep := time.Microsecond
+	for {
+		err := ab.checkConnection()
+		if err != nil {
+			time.Sleep(minSleep)
+			continue
+		}
+
+		info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
+		if err != nil {
+			time.Sleep(minSleep)
+			continue
+		}
+
+		// Deletion Routine
+		if len(info.CreatedApps) > 1 {
+			for i := 0; i < len(info.CreatedApps); i++ {
+				err = ab.Client.DeleteApplication(ab.AccountCrypt, info.CreatedApps[0].Id)
+				ab.AppChannel <- "deleted successfully"
+			}
+		}
+	}
+}
+
+func (ab *AlgorandBuffer) checkConnection() error {
+	err := ab.Health()
+	if err != nil {
+		return err
+	}
+	return ab.VerifyToken()
 }

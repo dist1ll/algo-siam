@@ -1,11 +1,11 @@
 package core
 
 import (
-	"github.com/m2q/aema/core/client"
-	"testing"
-
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
+	"github.com/m2q/aema/core/client"
 	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 // If HealthCheck and token verification works, expect no errors
 func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
@@ -59,16 +59,21 @@ func TestAlgorandBuffer_RequireManagement(t *testing.T) {
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	if err != nil {
-		t.Error(err)
-	}
-
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	go buffer.Manage()
 
-	return
 	acc, _ := c.AccountInformation("", nil)
-	for len(acc.CreatedApps) != 1 && client.FulfillsSchema(acc.CreatedApps[0]) {
-		acc, _ = c.AccountInformation("", nil)
+	iter := 0
+	for len(acc.CreatedApps) != 1 || !client.FulfillsSchema(acc.CreatedApps[0]) {
+		select{
+			case <- time.After(500 * time.Millisecond):
+				t.Fatalf("Manage() didn't return to channel in time")
+			case <- buffer.AppChannel:
+				acc, _ = c.AccountInformation("", nil)
+		}
+		if iter > 3 {
+			t.Fatalf("loop condition not fulfilled after 3 channel writes")
+		}
+		iter++
 	}
 }
