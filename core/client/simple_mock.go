@@ -130,6 +130,10 @@ func (a *AlgorandMock) TealCompile([]byte, context.Context) (models.CompileRespo
 
 
 func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error {
+	_, err := a.wrapExecutionCondition(nil, nil, (*AlgorandMock).DeleteApplication)
+	if err != nil {
+		return err
+	}
 	l := len(a.Account.CreatedApps)
 	if l < 1 {
 		return errors.New("no applications")

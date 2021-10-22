@@ -202,7 +202,7 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 func (ab *AlgorandBuffer) Manage() {
 	ab.currentlyManaged = true
 	minSleep := time.Microsecond
-	for {
+	main: for {
 		err := ab.checkConnection()
 		if err != nil {
 			time.Sleep(minSleep)
@@ -219,6 +219,10 @@ func (ab *AlgorandBuffer) Manage() {
 		if len(info.CreatedApps) > 1 {
 			for i := 0; i < len(info.CreatedApps); i++ {
 				err = ab.Client.DeleteApplication(ab.AccountCrypt, info.CreatedApps[0].Id)
+				if err != nil {
+					time.Sleep(minSleep)
+					continue main
+				}
 				ab.AppChannel <- "deleted successfully"
 			}
 		}

@@ -58,6 +58,23 @@ func TestAlgorandBuffer_RequireManagement(t *testing.T) {
 	assert.Panics(t, shouldPanicStore)
 }
 
+// AppChannel should not return anything if the DeleteApplication function
+// returns errors.
+func TestAlgorandBuffer_DeletionError(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	c.CreateDummyApps(6, 18, 32)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	go buffer.Manage()
+
+	c.SetError(true, (*client.AlgorandMock).DeleteApplication)
+	select {
+	case <-time.After(50 * time.Millisecond):
+		break
+	case <-buffer.AppChannel:
+		t.Fatalf("AppChannel returned information even though DeleteApplication returns error")
+	}
+}
+
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
@@ -65,7 +82,6 @@ func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	go buffer.Manage()
 
 	acc, _ := c.AccountInformation("", nil)
-
 	for i := 0; !client.ValidAccount(acc); i++ {
 		select {
 		case <-time.After(500 * time.Millisecond):
