@@ -29,9 +29,14 @@ type AlgorandBuffer struct {
 	AccountCrypt crypto.Account
 	// Client is the wrapping interface for communicating with the node
 	Client client.AlgorandClient
+	// Manage writes to AppChannel, everytime an application has been
+	// successfully deleted or added
+	AppChannel chan string
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
+	// currentlyManaged is true when the Manage()
+	currentlyManaged bool
 	//
 	init bool
 }
@@ -132,6 +137,12 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 	return m, nil
 }
 
+func (ab *AlgorandBuffer) StoreBuffer(map[string]string) {
+	if !ab.currentlyManaged {
+		panic("need to run 'go buffer.Manage()' before being able to store")
+	}
+}
+
 func (ab *AlgorandBuffer) CreateApplication() error {
 	_, err := ab.Client.SuggestedParams(context.Background())
 	if err != nil {
@@ -185,7 +196,5 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 //
 //
 func (ab *AlgorandBuffer) Manage() {
-	for true {
-
-	}
+	ab.currentlyManaged = true
 }
