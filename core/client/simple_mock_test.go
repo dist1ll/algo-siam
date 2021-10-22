@@ -9,11 +9,18 @@ import (
 
 // TestAlgorandMock_DummyApps tests if created dummy apps have the correct ID
 func TestAlgorandMock_DummyApps(t *testing.T) {
-	client := CreateAlgorandClientMock("", "")
-	client.CreateDummyApps(2, 5, 8)
-	assert.Equal(t, 3, len(client.Account.CreatedApps))
-	assert.EqualValues(t, 2, client.Account.CreatedApps[0].Id)
-	assert.EqualValues(t, 8, client.Account.CreatedApps[2].Id)
+	c := CreateAlgorandClientMock("", "")
+	c.CreateDummyApps(2, 5, 8)
+	assert.Equal(t, 3, len(c.Account.CreatedApps))
+	assert.EqualValues(t, 2, c.Account.CreatedApps[0].Id)
+	assert.EqualValues(t, 8, c.Account.CreatedApps[2].Id)
+
+	for _, val := range c.Account.CreatedApps {
+		assert.EqualValues(t, globalBytes, val.Params.GlobalStateSchema.NumByteSlice)
+		assert.EqualValues(t, globalInts, val.Params.GlobalStateSchema.NumUint)
+		assert.EqualValues(t, localBytes, val.Params.LocalStateSchema.NumByteSlice)
+		assert.EqualValues(t, localInts, val.Params.LocalStateSchema.NumUint)
+	}
 }
 
 func TestAlgorandMock_ErrorFunctions(t *testing.T) {

@@ -66,8 +66,10 @@ func (a *AlgorandMock) SetError(val bool, f ...interface{}) {
 // CreateDummyApps adds applications with given IDs to the account.
 func (a *AlgorandMock) CreateDummyApps(ids ...uint64) {
 	a.Account.CreatedApps = make([]models.Application, len(ids))
+	glob, loc := GenerateSchemasModel()
 	for i, val := range ids {
-		a.Account.CreatedApps[i] = models.Application{Id: val}
+		params := models.ApplicationParams{GlobalStateSchema: glob, LocalStateSchema: loc}
+		a.Account.CreatedApps[i] = models.Application{Id: val, Params: params}
 	}
 }
 // ClearFunctionErrors resets the error function map to its default.

@@ -50,6 +50,13 @@ func GenerateSchemas() (types.StateSchema, types.StateSchema) {
 	return localSchema, globalSchema
 }
 
+func GenerateSchemasModel() (models.ApplicationStateSchema, models.ApplicationStateSchema) {
+	g, l := GenerateSchemas()
+	globalSchema := models.ApplicationStateSchema{NumUint: g.NumUint, NumByteSlice: g.NumByteSlice}
+	localSchema := models.ApplicationStateSchema{NumUint: l.NumUint, NumByteSlice: l.NumByteSlice}
+	return localSchema, globalSchema
+}
+
 func FulfillsSchema(app models.Application) bool {
 	if app.Id == 0 {
 		return false
