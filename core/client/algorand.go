@@ -44,6 +44,12 @@ func GeneratePrivateKey64() string {
 	return base64.StdEncoding.EncodeToString(acc.PrivateKey)
 }
 
+// ValidAccount returns true if the given account is a valid AlgorandBuffer target
+// and ready to store data in a single application
+func ValidAccount(account models.Account) bool {
+	return len(account.CreatedApps) == 1 && FulfillsSchema(account.CreatedApps[0])
+}
+
 func GenerateSchemas() (types.StateSchema, types.StateSchema) {
 	globalSchema := types.StateSchema{NumUint: uint64(globalInts), NumByteSlice: uint64(globalBytes)}
 	localSchema := types.StateSchema{NumUint: uint64(localInts), NumByteSlice: uint64(localBytes)}

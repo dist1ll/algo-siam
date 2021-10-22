@@ -1,12 +1,14 @@
 package core
 
 import (
+	"testing"
+	"time"
+
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/m2q/aema/core/client"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
+
 // If HealthCheck and token verification works, expect no errors
 func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
@@ -63,17 +65,16 @@ func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	go buffer.Manage()
 
 	acc, _ := c.AccountInformation("", nil)
-	iter := 0
-	for len(acc.CreatedApps) != 1 || !client.FulfillsSchema(acc.CreatedApps[0]) {
-		select{
-			case <- time.After(500 * time.Millisecond):
-				t.Fatalf("Manage() didn't return to channel in time")
-			case <- buffer.AppChannel:
-				acc, _ = c.AccountInformation("", nil)
+
+	for i := 0; !client.ValidAccount(acc); i++ {
+		select {
+		case <-time.After(500 * time.Millisecond):
+			t.Fatalf("Manage() didn't return to channel in time")
+		case <-buffer.AppChannel:
+			acc, _ = c.AccountInformation("", nil)
 		}
-		if iter > 3 {
+		if i > 3 {
 			t.Fatalf("loop condition not fulfilled after 3 channel writes")
 		}
-		iter++
 	}
 }
