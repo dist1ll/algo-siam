@@ -3,8 +3,24 @@ package core
 // The AEMA buffer is the primary persistence interface to store match data.
 // The buffer can be implemented as local storage, cloud storage or on a blockchain.
 type Buffer interface {
+	// GetBuffer can return an error if the buffer is busy writing
+	// elements. See BusyBuffer error.
 	GetBuffer() (map[string]string, error)
-	StoreBuffer(map[string]string)
+	// PutElements stores given key-value pairs. Existing keys will be
+	// overridden, non-existing keys will be created. Returns 0 if the
+	// action was successful.
+	PutElements(kv map[string]string) int
+	// DeleteElements removes given keys from buffer. Does nothing
+	// if key doesn't exist.
+	DeleteElements(keys ...string)
+}
+
+type BusyBuffer struct {
+	msg string
+}
+
+func (e *BusyBuffer) Error() string {
+	return "buffer is busy: " + e.msg
 }
 
 // Implements an AEMA buffer as local, in-memory storage

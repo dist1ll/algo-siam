@@ -7,7 +7,6 @@ import (
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/stretchr/testify/assert"
 )
-
 // If HealthCheck and token verification works, expect no errors
 func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
@@ -51,7 +50,7 @@ func TestAlgorandBuffer_RequireManagement(t *testing.T) {
 		_, _ = buffer.GetBuffer()
 	}
 	shouldPanicStore := func() {
-		buffer.StoreBuffer(make(map[string]string, 3))
+		buffer.PutElements(make(map[string]string, 3))
 	}
 	assert.Panics(t, shouldPanicGet)
 	assert.Panics(t, shouldPanicStore)

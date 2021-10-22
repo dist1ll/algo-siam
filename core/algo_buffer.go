@@ -140,7 +140,7 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 	return m, nil
 }
 
-func (ab *AlgorandBuffer) StoreBuffer(map[string]string) {
+func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
 	if !ab.currentlyManaged {
 		panic("need to run 'go buffer.Manage()' before being able to store")
 	}
