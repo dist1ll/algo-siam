@@ -16,6 +16,7 @@ import (
 )
 
 const AlgorandDefaultTimeout time.Duration = time.Second * 5
+const AlgorandDefaultMinSleep time.Duration = time.Second * 5
 
 const ApprovalProg = "#pragma version 4\n" +
 	"addr Sender\n" +
@@ -32,6 +33,9 @@ type AlgorandBuffer struct {
 	// Manage writes to AppChannel, everytime an application has been
 	// successfully deleted or added
 	AppChannel chan string
+	// minSleep is the minimum amount of time the Manage routine will sleep
+	// after failing to execute a blockchain action
+	MinSleep time.Duration
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
@@ -58,6 +62,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 		Client:        c,
 		AccountCrypt:  account,
 		AppChannel: make(chan string),
+		MinSleep: AlgorandDefaultMinSleep,
 		timeoutLength: AlgorandDefaultTimeout,
 	}
 
@@ -201,32 +206,48 @@ func (ab *AlgorandBuffer) CreateApplication() error {
 //
 func (ab *AlgorandBuffer) Manage() {
 	ab.currentlyManaged = true
-	minSleep := time.Microsecond
-	main: for {
+	for {
 		err := ab.checkConnection()
 		if err != nil {
-			time.Sleep(minSleep)
+			time.Sleep(ab.MinSleep)
 			continue
 		}
 
-		info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
+		err = ab.manageApplications()
 		if err != nil {
-			time.Sleep(minSleep)
+			time.Sleep(ab.MinSleep)
 			continue
-		}
-
-		// Deletion Routine
-		if len(info.CreatedApps) > 1 {
-			for i := 0; i < len(info.CreatedApps); i++ {
-				err = ab.Client.DeleteApplication(ab.AccountCrypt, info.CreatedApps[0].Id)
-				if err != nil {
-					time.Sleep(minSleep)
-					continue main
-				}
-				ab.AppChannel <- "deleted successfully"
-			}
 		}
 	}
+}
+
+// manageApplications takes care of deleting and creating applications
+// to make the target account valid.
+func (ab *AlgorandBuffer) manageApplications() error {
+	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
+	if err != nil {
+		return err
+	}
+
+	// Deletion Routine
+	err = ab.manageDeletion(info)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
+	if len(info.CreatedApps) > 1 {
+		for i := 0; i < len(info.CreatedApps); i++ {
+			err := ab.Client.DeleteApplication(ab.AccountCrypt, info.CreatedApps[0].Id)
+			if err != nil {
+				return err
+			}
+			ab.AppChannel <- "deleted successfully"
+		}
+	}
+	return nil
 }
 
 func (ab *AlgorandBuffer) checkConnection() error {
