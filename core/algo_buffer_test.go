@@ -86,7 +86,7 @@ func BufferMakesTargetValid(t *testing.T, buffer *AlgorandBuffer, c client.Algor
 	for i := 0; !client.ValidAccount(acc); i++ {
 		select {
 		case <-time.After(500 * time.Millisecond):
-			t.Fatalf("Manage() didn't return to channel in time")
+			t.Fatalf("Manage() didn't mutate application in time")
 		case <-buffer.AppChannel:
 			acc, _ = c.AccountInformation("", nil)
 		}
@@ -96,6 +96,7 @@ func BufferMakesTargetValid(t *testing.T, buffer *AlgorandBuffer, c client.Algor
 		}
 	}
 }
+
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
@@ -134,4 +135,13 @@ func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
 	BufferMakesTargetValid(t, buffer, c, 2)
 
 	assert.EqualValues(t, 50, c.Account.CreatedApps[0].CreatedAtRound)
+}
+
+func TestAlgorandBuffer_Creation(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	go buffer.Manage()
+
+	BufferMakesTargetValid(t, buffer, c, 1)
 }

@@ -4,20 +4,16 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"time"
 
-	"github.com/algorand/go-algorand-sdk/future"
-	"github.com/algorand/go-algorand-sdk/types"
 	"github.com/m2q/aema/core/client"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
-
-const AlgorandDefaultTimeout time.Duration = time.Second * 5
-const AlgorandDefaultMinSleep time.Duration = time.Second * 5
 
 const ApprovalProg = "#pragma version 4\n" +
 	"addr Sender\n" +
@@ -63,9 +59,9 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	buffer := &AlgorandBuffer{
 		Client:        c,
 		AccountCrypt:  account,
-		AppChannel: make(chan string),
-		MinSleep: AlgorandDefaultMinSleep,
-		timeoutLength: AlgorandDefaultTimeout,
+		AppChannel:    make(chan string),
+		MinSleep:      client.AlgorandDefaultMinSleep,
+		timeoutLength: client.AlgorandDefaultTimeout,
 	}
 
 	err = buffer.Health()
@@ -154,51 +150,6 @@ func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
 	}
 }
 
-func (ab *AlgorandBuffer) CreateApplication() error {
-	_, err := ab.Client.SuggestedParams(context.Background())
-	if err != nil {
-		return fmt.Errorf("error getting suggested tx params: %s", err)
-	}
-
-	localSchema, globalSchema := client.GenerateSchemas()
-
-	params, _ := ab.Client.SuggestedParams(context.Background())
-	// comment out the next two (2) lines to use suggested fees
-	params.FlatFee = true
-	params.Fee = 1000
-
-	//b, err := ioutil.ReadFile("./scripts/approval.teal") // just pass the file name
-	//if err != nil {
-	//   fmt.Print(err)
-	//}
-	appr := client.CompileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
-	clear := client.CompileProgram(ab.Client, []byte("#pragma version 4\nint 1"))
-
-	txn, _ := future.MakeApplicationCreateTx(false, appr, clear, globalSchema, localSchema,
-		nil, nil, nil, nil, params, ab.AccountCrypt.Address, nil,
-		types.Digest{}, [32]byte{}, types.Address{})
-
-	//txn, _ = future.MakeApplicationDeleteTx(5, nil, nil, nil, nil,
-	//	params, ab.AccountCrypt.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
-
-	// Sign the transaction
-	txID, signedTxn, _ := crypto.SignTransaction(ab.AccountCrypt.PrivateKey, txn)
-	fmt.Printf("Signed txid: %s\n", txID)
-
-	// Submit the transaction
-	sendResponse, _ := ab.Client.SendRawTransaction(signedTxn, context.Background())
-	fmt.Printf("Submitted transaction %s\n", sendResponse)
-
-	// Wait for confirmation
-	client.WaitForConfirmation(txID, ab.Client, 5)
-
-	// display results
-	confirmedTxn, _, _ := ab.Client.PendingTransactionInformation(txID, context.Background())
-	appId := confirmedTxn.ApplicationIndex
-	fmt.Printf("Created new app-id: %d\n", appId)
-	return nil
-}
-
 // Manage is a constantly running routine that manages the lifecycle of
 // the AlgorandBuffer. It performs continuous checks against the node,
 // smart contract, application state and funding amount. Manage takes care
@@ -236,15 +187,43 @@ func (ab *AlgorandBuffer) manageApplications() error {
 	if err != nil {
 		return err
 	}
+
+	// Creation Routine
+	err = ab.manageCreation(info)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
+	if client.ValidAccount(info) {
+		return nil
+	}
+	if len(info.CreatedApps) > 0 {
+		return errors.New("must delete invalid applications before creating new one")
+	}
+
+	appId, err := ab.Client.CreateApplication(ab.AccountCrypt, "#pragma version 4\nint 1", "#pragma version 4\nint 1")
+	if err != nil {
+		return err
+	}
+	ab.AppChannel <- fmt.Sprintf("created app with ID: <%d>", appId)
+	ab.AppId = appId
 	return nil
 }
 
 func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
+	// If no apps exist, no deletion necessary
+	if len(info.CreatedApps) == 0 {
+		return nil
+	}
 	// Find out if there exists an app that's already "valid" (i.e. right schema)
 	validApp := -1
 	earliestValidApp := uint64(math.MaxUint64)
 	for i, val := range info.CreatedApps {
-		if client.FulfillsSchema(val) && val.CreatedAtRound < earliestValidApp{
+		if client.FulfillsSchema(val) && val.CreatedAtRound < earliestValidApp {
 			validApp = i
 			earliestValidApp = val.CreatedAtRound
 		}

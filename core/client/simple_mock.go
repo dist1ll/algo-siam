@@ -157,3 +157,17 @@ func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error
 	}
 	return errors.New("no app with given id found")
 }
+
+func (a *AlgorandMock) CreateApplication(account crypto.Account, approve string, clear string) (uint64, error) {
+	g, l := GenerateSchemasModel()
+	params := models.ApplicationParams{GlobalStateSchema: g, LocalStateSchema: l}
+	app := models.Application{Id: 4512, Params: params}
+
+	ret, err := a.wrapExecutionCondition(app, models.Application{}, (*AlgorandMock).CreateApplication)
+	if err != nil {
+		return 0, err
+	}
+	a.App = ret.(models.Application)
+	a.Account.CreatedApps = []models.Application{a.App}
+	return a.App.Id, nil
+}

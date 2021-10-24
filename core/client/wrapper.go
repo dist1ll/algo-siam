@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
@@ -91,3 +92,49 @@ func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint
 	return err
 }
 
+func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approve string, clear string) (uint64, error) {
+	_, err := a.SuggestedParams(context.Background())
+	if err != nil {
+		return 0, fmt.Errorf("error getting suggested tx params: %s", err)
+	}
+
+	localSchema, globalSchema := GenerateSchemas()
+
+	ctx, cancel := context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
+	params, _ := a.SuggestedParams(ctx)
+	params.FlatFee = true
+	params.Fee = 1000
+	cancel()
+
+	appr := CompileProgram(a, []byte(approve))
+	clr := CompileProgram(a, []byte(clear))
+
+	txn, _ := future.MakeApplicationCreateTx(false, appr, clr, globalSchema, localSchema,
+		nil, nil, nil, nil, params, account.Address, nil,
+		types.Digest{}, [32]byte{}, types.Address{})
+
+	// Sign the transaction
+	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
+	if err != nil {
+		return 0, nil
+	}
+
+	// Submit the transaction
+	_, err = a.SendRawTransaction(signedTxn, context.Background())
+	if err != nil {
+		return 0, err
+	}
+	// Wait for confirmation
+	_, err = WaitForConfirmation(txID, a, 5)
+	if err != nil {
+		return 0, err
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
+	confirmedTxn, _, err := a.PendingTransactionInformation(txID, ctx)
+	cancel()
+	if err != nil {
+		return 0, err
+	}
+	return confirmedTxn.ApplicationIndex, nil
+}

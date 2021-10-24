@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/types"
@@ -19,6 +20,9 @@ const localInts = 0
 const localBytes = 0
 const globalInts = 0
 const globalBytes = 64
+
+const AlgorandDefaultTimeout time.Duration = time.Second * 20
+const AlgorandDefaultMinSleep time.Duration = time.Second * 5
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
 type AlgorandClient interface {
@@ -36,6 +40,10 @@ type AlgorandClient interface {
 	// If the account has no apps, or none of its apps have the correct ID, then an
 	// error is returned.
 	DeleteApplication(crypto.Account, uint64) error
+
+	// CreateApplication creates a new application with given teal code. It will wait
+	// for a confirmation from the node, and is blocking. Returns AppId.
+	CreateApplication(account crypto.Account, approval string, clear string) (uint64, error)
 }
 
 // GeneratePrivateKey64 returns a random, base64-encoded private key.
