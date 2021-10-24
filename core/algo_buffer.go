@@ -34,11 +34,15 @@ type AlgorandBuffer struct {
 	// minSleep is the minimum amount of time the Manage routine will sleep
 	// after failing to execute a blockchain action
 	MinSleep time.Duration
+	// bufferInitialized is written to after Manage establishes connection to
+	// the node and validates the target account for the first time.
+	bufferInitialized chan string
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
-	// currentlyManaged is true when the Manage()
-	currentlyManaged bool
+	// isSetup is true if buffer is ready to store and fetch data. Manage
+	// makes sure that target account and node connectivity are valid.
+	isSetup bool
 	//
 	init bool
 }
@@ -57,11 +61,13 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	}
 
 	buffer := &AlgorandBuffer{
-		Client:        c,
-		AccountCrypt:  account,
-		AppChannel:    make(chan string),
-		MinSleep:      client.AlgorandDefaultMinSleep,
-		timeoutLength: client.AlgorandDefaultTimeout,
+		Client:            c,
+		AccountCrypt:      account,
+		AppChannel:        make(chan string),
+		bufferInitialized: make(chan string),
+		MinSleep:          client.AlgorandDefaultMinSleep,
+		timeoutLength:     client.AlgorandDefaultTimeout,
+		isSetup:           false,
 	}
 
 	err = buffer.Health()
@@ -127,8 +133,8 @@ func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
 
 // GetBuffer returns the stored global state of this buffers algorand application
 func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
-	if !ab.currentlyManaged {
-		panic("need to run 'go buffer.Manage()' before being able to store")
+	if !ab.isSetup {
+		panic("need to run 'buffer.Setup()' before being able to fetch data")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
 	app, err := ab.Client.GetApplicationByID(ab.AppId, ctx)
@@ -145,20 +151,15 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 }
 
 func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
-	if !ab.currentlyManaged {
-		panic("need to run 'go buffer.Manage()' before being able to store")
+	if !ab.isSetup {
+		panic("need to run  'buffer.Setup()' before being able to store")
 	}
 }
 
-// Manage is a constantly running routine that manages the lifecycle of
-// the AlgorandBuffer. It performs continuous checks against the node,
-// smart contract, application state and funding amount. Manage takes care
-// of asynchronous buffer writes, by queueing and writing them when the node
-// is available.
-//
-//
-func (ab *AlgorandBuffer) Manage() {
-	ab.currentlyManaged = true
+// Setup shall be called before the buffer is used or a Manage goroutine is
+// started. This function ends when node connection is established and target
+// account is valid.
+func (ab *AlgorandBuffer) Setup() {
 	for {
 		err := ab.checkConnection()
 		if err != nil {
@@ -171,6 +172,34 @@ func (ab *AlgorandBuffer) Manage() {
 			time.Sleep(ab.MinSleep)
 			continue
 		}
+
+		// setup done
+		ab.isSetup = false
+		break
+	}
+}
+
+// Manage is a constantly running routine that manages the lifecycle of
+// the AlgorandBuffer. It performs continuous checks against the node,
+// smart contract, application state and funding amount. Manage takes care
+// of asynchronous buffer writes, by queueing and writing them when the node
+// is available.
+func (ab *AlgorandBuffer) Manage() {
+	for {
+		err := ab.checkConnection()
+		if err != nil {
+			time.Sleep(ab.MinSleep)
+			continue
+		}
+
+		err = ab.manageApplications()
+		if err != nil {
+			time.Sleep(ab.MinSleep)
+			continue
+		}
+
+		// setup done
+		ab.isSetup = false
 	}
 }
 
@@ -209,6 +238,7 @@ func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
 	if err != nil {
 		return err
 	}
+
 	ab.AppChannel <- fmt.Sprintf("created app with ID: <%d>", appId)
 	ab.AppId = appId
 	return nil
