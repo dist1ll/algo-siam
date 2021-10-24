@@ -117,3 +117,21 @@ func TestAlgorandBuffer_DeletePartial(t *testing.T) {
 
 	BufferMakesTargetValid(t, buffer, c, 2)
 }
+
+// Given several applications with the right schema, delete the one that has
+// been created most recently
+func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	c.CreateDummyApps(6, 18, 32)
+
+	c.Account.CreatedApps[0].CreatedAtRound = 200
+	c.Account.CreatedApps[1].CreatedAtRound = 50
+	c.Account.CreatedApps[2].CreatedAtRound = 150
+
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	go buffer.Manage()
+
+	BufferMakesTargetValid(t, buffer, c, 2)
+
+	assert.EqualValues(t, 50, c.Account.CreatedApps[0].CreatedAtRound)
+}

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/algorand/go-algorand-sdk/future"
@@ -241,9 +242,11 @@ func (ab *AlgorandBuffer) manageApplications() error {
 func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
 	// Find out if there exists an app that's already "valid" (i.e. right schema)
 	validApp := -1
+	earliestValidApp := uint64(math.MaxUint64)
 	for i, val := range info.CreatedApps {
-		if client.FulfillsSchema(val) {
+		if client.FulfillsSchema(val) && val.CreatedAtRound < earliestValidApp{
 			validApp = i
+			earliestValidApp = val.CreatedAtRound
 		}
 	}
 
