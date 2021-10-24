@@ -63,13 +63,22 @@ func (a *AlgorandMock) SetError(val bool, f ...interface{}) {
 	}
 }
 
-// CreateDummyApps adds applications with given IDs to the account.
+// CreateDummyApps adds applications with given IDs to the account with the default
+// AEMA schema.
 func (a *AlgorandMock) CreateDummyApps(ids ...uint64) {
 	a.Account.CreatedApps = make([]models.Application, len(ids))
 	glob, loc := GenerateSchemasModel()
 	for i, val := range ids {
 		params := models.ApplicationParams{GlobalStateSchema: glob, LocalStateSchema: loc}
 		a.Account.CreatedApps[i] = models.Application{Id: val, Params: params}
+	}
+}
+
+// CreateDummyAppsWithSchema adds applications with given IDs and a given schema.
+func (a *AlgorandMock) CreateDummyAppsWithSchema(s models.ApplicationStateSchema, ids ...uint64) {
+	a.CreateDummyApps(ids...)
+	for i, _ := range a.Account.CreatedApps {
+		a.Account.CreatedApps[i].Params = models.ApplicationParams{GlobalStateSchema: s, LocalStateSchema: s}
 	}
 }
 // ClearFunctionErrors resets the error function map to its default.
@@ -140,8 +149,9 @@ func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error
 	}
 	for idx, app := range a.Account.CreatedApps {
 		if app.Id == appId {
-			a.Account.CreatedApps[idx] = a.Account.CreatedApps[l - 1]
-			a.Account.CreatedApps = a.Account.CreatedApps[:l-1]
+			result := make([]models.Application, 0)
+			result = append(result, a.Account.CreatedApps[:idx]...)
+			a.Account.CreatedApps = append(result, a.Account.CreatedApps[idx + 1:]...)
 			return nil
 		}
 	}

@@ -30,8 +30,9 @@ type AlgorandBuffer struct {
 	AccountCrypt crypto.Account
 	// Client is the wrapping interface for communicating with the node
 	Client client.AlgorandClient
-	// Manage writes to AppChannel, everytime an application has been
-	// successfully deleted or added
+	// AppChannel returns information every time the application state of
+	// this buffer's account has been mutated (i.e. deleted/created app).
+	// See routine Manage.
 	AppChannel chan string
 	// minSleep is the minimum amount of time the Manage routine will sleep
 	// after failing to execute a blockchain action
@@ -238,10 +239,23 @@ func (ab *AlgorandBuffer) manageApplications() error {
 }
 
 func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
-	if len(info.CreatedApps) > 1 {
-		for i := 0; i < len(info.CreatedApps); i++ {
-			err := ab.Client.DeleteApplication(ab.AccountCrypt, info.CreatedApps[0].Id)
+	// Find out if there exists an app that's already "valid" (i.e. right schema)
+	validApp := -1
+	for i, val := range info.CreatedApps {
+		if client.FulfillsSchema(val) {
+			validApp = i
+		}
+	}
+
+	// Delete apps if there's at least one incorrect app
+	if !client.ValidAccount(info) {
+		for i := len(info.CreatedApps) - 1; i >= 0; i-- {
+			if i == validApp {
+				continue
+			}
+			err := ab.Client.DeleteApplication(ab.AccountCrypt, info.CreatedApps[i].Id)
 			if err != nil {
+
 				return err
 			}
 			ab.AppChannel <- "deleted successfully"

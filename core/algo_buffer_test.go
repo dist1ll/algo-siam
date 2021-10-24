@@ -75,13 +75,14 @@ func TestAlgorandBuffer_DeletionError(t *testing.T) {
 	}
 }
 
-func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
-	c := client.CreateAlgorandClientMock("", "")
-	c.CreateDummyApps(6, 18, 32)
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	go buffer.Manage()
-
+// BufferMakesTargetValid is a helper method that tests if the buffer brings
+// the target account into a valid application state. A valid state means
+// that the account has exactly one application, with the correct schema.
+// `maxIter` specifies the maximum number of AppChannel callbacks before
+// defaulting to a fatal error.
+func BufferMakesTargetValid(t *testing.T, buffer *AlgorandBuffer, c client.AlgorandClient, maxIter int) {
 	acc, _ := c.AccountInformation("", nil)
+
 	for i := 0; !client.ValidAccount(acc); i++ {
 		select {
 		case <-time.After(500 * time.Millisecond):
@@ -89,8 +90,30 @@ func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 		case <-buffer.AppChannel:
 			acc, _ = c.AccountInformation("", nil)
 		}
-		if i > 3 {
-			t.Fatalf("loop condition not fulfilled after 3 channel writes")
+
+		if i >= maxIter {
+			t.Fatalf("loop condition not fulfilled after %d channel writes", maxIter)
 		}
 	}
+}
+func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	c.CreateDummyApps(6, 18, 32)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	go buffer.Manage()
+
+	BufferMakesTargetValid(t, buffer, c, 3)
+}
+
+func TestAlgorandBuffer_DeletePartial(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	c.CreateDummyAppsWithSchema(models.ApplicationStateSchema{}, 6, 18, 32)
+
+	// Set one application to have correct schema
+	g, l := client.GenerateSchemasModel()
+	c.Account.CreatedApps[0].Params = models.ApplicationParams{GlobalStateSchema: g, LocalStateSchema: l}
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	go buffer.Manage()
+
+	BufferMakesTargetValid(t, buffer, c, 2)
 }
