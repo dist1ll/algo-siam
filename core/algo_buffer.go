@@ -80,7 +80,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 		timeoutLength:     client.AlgorandDefaultTimeout,
 	}
 
-	err = buffer.setup()
+	err = buffer.ensureRemoteValid()
 	if err != nil {
 		return buffer, err
 	}
@@ -88,19 +88,31 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	return buffer, err
 }
 
-// setup is called when initializing the AlgorandBuffer (see CreateAlgorandBuffer).
-// This function establishes node connection, verifies/creates/deletes applications
-// and sets the public vars of the buffer. setup is a blocking call.
-func (ab *AlgorandBuffer) setup() error {
+// ensureRemoteValid ensures the node is healthy and the target account is in a valid
+// state. To achieve this, it will verify, create or delete applications and store the
+// updated results in the AlgorandBuffer. Call this when initializing the AlgorandBuffer
+// (see CreateAlgorandBuffer).
+//
+// If the target account is valid and the node is healthy, this function does nothing.
+func (ab *AlgorandBuffer) ensureRemoteValid() error {
+	// Connectivity check
 	err := ab.checkConnection()
 	if err != nil {
 		return err
 	}
 
-	err = ab.manageApplications()
+	// Deletion Routine
+	err = ab.manageDeletion()
 	if err != nil {
 		return err
 	}
+
+	// Creation Routine
+	err = ab.manageCreation()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -173,13 +185,7 @@ func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
 // is available.
 func (ab *AlgorandBuffer) Manage() {
 	for {
-		err := ab.checkConnection()
-		if err != nil {
-			time.Sleep(ab.MinSleep)
-			continue
-		}
-
-		err = ab.manageApplications()
+		err := ab.ensureRemoteValid()
 		if err != nil {
 			time.Sleep(ab.MinSleep)
 			continue
@@ -190,17 +196,6 @@ func (ab *AlgorandBuffer) Manage() {
 // manageApplications takes care of deleting and creating applications
 // to make the target account valid.
 func (ab *AlgorandBuffer) manageApplications() error {
-	// Deletion Routine
-	err := ab.manageDeletion()
-	if err != nil {
-		return err
-	}
-
-	// Creation Routine
-	err = ab.manageCreation()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
