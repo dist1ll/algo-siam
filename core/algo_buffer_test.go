@@ -146,11 +146,22 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
-func TestAlgorandBuffer_CreationEventually(t *testing.T) {
+// Test if buffer restores valid account state after adding an application
+// AFTER the buffer has been verified and initialized
+func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
-	c.SetError(true, (*client.AlgorandMock).HealthCheck, (*client.AlgorandMock).GetApplicationByID)
+	// Add application after setup
+	c.AddDummyApps(56)
+	assert.False(t, client.ValidAccount(c.Account))
+
 	go buffer.Manage(nil)
+
+	// Manage() should make account valid in less than a second
+	now := time.Now()
+	for !client.ValidAccount(c.Account) && time.Now().Sub(now) < time.Second {
+		time.Sleep(time.Millisecond)
+	}
 	assert.True(t, client.ValidAccount(c.Account))
 }

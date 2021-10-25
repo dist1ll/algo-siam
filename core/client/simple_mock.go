@@ -63,8 +63,22 @@ func (a *AlgorandMock) SetError(val bool, f ...interface{}) {
 	}
 }
 
-// CreateDummyApps adds applications with given IDs to the account with the default
+// AddDummyApps adds applications with given IDs to the account with the default
 // AEMA schema.
+func (a *AlgorandMock) AddDummyApps(ids ...uint64) {
+	if a.Account.CreatedApps == nil {
+		return
+	}
+
+	glob, loc := GenerateSchemasModel()
+	for _, val := range ids {
+		params := models.ApplicationParams{GlobalStateSchema: glob, LocalStateSchema: loc}
+		a.Account.CreatedApps = append(a.Account.CreatedApps, models.Application{Id: val, Params: params})
+	}
+}
+
+// CreateDummyApps sets applications with given IDs to the account with the default
+// AEMA schema. Note: existing applications are completely overridden.
 func (a *AlgorandMock) CreateDummyApps(ids ...uint64) {
 	a.Account.CreatedApps = make([]models.Application, len(ids))
 	glob, loc := GenerateSchemasModel()
