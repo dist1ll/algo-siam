@@ -140,9 +140,8 @@ func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
 
 func TestAlgorandBuffer_Creation(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
-	go buffer.Manage()
-
-	BufferMakesTargetValid(t, buffer, c, 1)
+	assert.False(t, client.ValidAccount(c.Account))
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	assert.True(t, client.ValidAccount(c.Account))
 }
