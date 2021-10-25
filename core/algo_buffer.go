@@ -47,6 +47,18 @@ type AlgorandBuffer struct {
 	init bool
 }
 
+// CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment
+// variables. See README.md for more information.
+func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
+	url, token, base64key := GetAlgorandEnvironmentVars()
+	a, err := client.CreateAlgorandClientWrapper(url, token)
+	if err != nil {
+		return nil, err
+	}
+	return CreateAlgorandBuffer(a, base64key)
+}
+
+
 // CreateAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
 func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
@@ -83,15 +95,22 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	return buffer, err
 }
 
-// CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment
-// variables. See README.md for more information.
-func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
-	url, token, base64key := GetAlgorandEnvironmentVars()
-	a, err := client.CreateAlgorandClientWrapper(url, token)
+// Setup is called when initializing the AlgorandBuffer (see CreateAlgorandBuffer).
+// This function establishes node connection, verifies/creates/deletes applications
+// and sets the public vars of the buffer.
+func (ab *AlgorandBuffer) setup() error {
+	err := ab.checkConnection()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return CreateAlgorandBuffer(a, base64key)
+
+	err = ab.manageApplications()
+	if err != nil {
+		return err
+	}
+	// setup done
+	ab.isSetup = false
+	return nil
 }
 
 // VerifyToken checks whether the URL and provided API token resolve to a correct
@@ -156,33 +175,10 @@ func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
 	}
 }
 
-// Setup shall be called before the buffer is used or a Manage goroutine is
-// started. This function ends when node connection is established and target
-// account is valid.
-func (ab *AlgorandBuffer) Setup() {
-	for {
-		err := ab.checkConnection()
-		if err != nil {
-			time.Sleep(ab.MinSleep)
-			continue
-		}
-
-		err = ab.manageApplications()
-		if err != nil {
-			time.Sleep(ab.MinSleep)
-			continue
-		}
-
-		// setup done
-		ab.isSetup = false
-		break
-	}
-}
-
-// Manage is a constantly running routine that manages the lifecycle of
-// the AlgorandBuffer. It performs continuous checks against the node,
-// smart contract, application state and funding amount. Manage takes care
-// of asynchronous buffer writes, by queueing and writing them when the node
+// Manage is a constantly running routine that manages the lifecycle of the
+// AlgorandBuffer. It performs continuous checks against the node, smart
+// contract, application state and funding amount. Manage takes care of
+// asynchronous buffer writes, by queueing and writing them when the node
 // is available.
 func (ab *AlgorandBuffer) Manage() {
 	for {
@@ -226,6 +222,9 @@ func (ab *AlgorandBuffer) manageApplications() error {
 	return nil
 }
 
+// manageCreation creates an Algorand application for the target account.
+// For this to work, the account needs to be valid (i.e. have no registered
+// app and enough funding).
 func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
 	if client.ValidAccount(info) {
 		return nil
@@ -244,6 +243,10 @@ func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
 	return nil
 }
 
+// manageDeletion removes applications tied to the target account, if they
+// don't fulfil the specs of the Algorand buffer (e.g. wrong schema). If
+// the account has several valid applications, then the one with the smallest
+// CreatedAtRound-parameter will be kept. All others will be deleted.
 func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
 	// If no apps exist, no deletion necessary
 	if len(info.CreatedApps) == 0 {
@@ -276,6 +279,9 @@ func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
 	return nil
 }
 
+// checkConnection is a helper function that checks node connectivity and
+// verifies that the API token is correct. Ideally this is done on a regular
+// basis and used to monitor the app.
 func (ab *AlgorandBuffer) checkConnection() error {
 	err := ab.Health()
 	if err != nil {
