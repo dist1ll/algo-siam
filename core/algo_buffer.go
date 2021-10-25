@@ -30,9 +30,6 @@ type AlgorandBuffer struct {
 	// this buffer's account has been mutated (i.e. deleted/created app).
 	// See routine Manage.
 	AppChannel chan string
-	// minSleep is the minimum amount of time the Manage routine will sleep
-	// after failing to execute a blockchain action
-	MinSleep time.Duration
 	// bufferInitialized is written to after Manage establishes connection to
 	// the node and validates the target account for the first time.
 	bufferInitialized chan string
@@ -44,6 +41,18 @@ type AlgorandBuffer struct {
 	isSetup bool
 	//
 	init bool
+}
+
+type ManageConfig struct {
+	// SleepTime is the minimum amount of time the Manage routine will sleep
+	// after failing to execute a blockchain action
+	SleepTime time.Duration
+}
+
+func GetDefaultManageConfig() *ManageConfig {
+	return &ManageConfig{
+		SleepTime: client.AlgorandDefaultMinSleep,
+	}
 }
 
 // CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment
@@ -76,7 +85,6 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 		AccountCrypt:      account,
 		AppChannel:        make(chan string),
 		bufferInitialized: make(chan string),
-		MinSleep:          client.AlgorandDefaultMinSleep,
 		timeoutLength:     client.AlgorandDefaultTimeout,
 	}
 
@@ -183,21 +191,21 @@ func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
 // contract, application state and funding amount. Manage takes care of
 // asynchronous buffer writes, by queueing and writing them when the node
 // is available.
-func (ab *AlgorandBuffer) Manage() {
+//
+// The config parameter describes the behavior of the Manage routine, which
+// include sleep time after unsuccessful node calls.
+func (ab *AlgorandBuffer) Manage(config *ManageConfig) {
+	if config == nil {
+		config = GetDefaultManageConfig()
+	}
+
 	for {
 		err := ab.ensureRemoteValid()
 		if err != nil {
-			time.Sleep(ab.MinSleep)
+			time.Sleep(config.SleepTime)
 			continue
 		}
 	}
-}
-
-// manageApplications takes care of deleting and creating applications
-// to make the target account valid.
-func (ab *AlgorandBuffer) manageApplications() error {
-
-	return nil
 }
 
 // manageCreation creates an Algorand application for the target account.

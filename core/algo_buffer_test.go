@@ -145,3 +145,12 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	assert.True(t, client.ValidAccount(c.Account))
 }
+
+func TestAlgorandBuffer_CreationEventually(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	c.SetError(true, (*client.AlgorandMock).HealthCheck, (*client.AlgorandMock).GetApplicationByID)
+	go buffer.Manage(nil)
+	assert.True(t, client.ValidAccount(c.Account))
+}
