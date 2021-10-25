@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"time"
 
@@ -79,25 +78,19 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 		bufferInitialized: make(chan string),
 		MinSleep:          client.AlgorandDefaultMinSleep,
 		timeoutLength:     client.AlgorandDefaultTimeout,
-		isSetup:           false,
 	}
 
-	err = buffer.Health()
+	err = buffer.setup()
 	if err != nil {
-		return buffer, fmt.Errorf("error checking health: %w", err)
-	}
-
-	err = buffer.VerifyToken()
-	if err != nil {
-		return buffer, fmt.Errorf("error verifying token: %w", err)
+		return buffer, err
 	}
 
 	return buffer, err
 }
 
-// Setup is called when initializing the AlgorandBuffer (see CreateAlgorandBuffer).
+// setup is called when initializing the AlgorandBuffer (see CreateAlgorandBuffer).
 // This function establishes node connection, verifies/creates/deletes applications
-// and sets the public vars of the buffer.
+// and sets the public vars of the buffer. setup is a blocking call.
 func (ab *AlgorandBuffer) setup() error {
 	err := ab.checkConnection()
 	if err != nil {
@@ -108,8 +101,6 @@ func (ab *AlgorandBuffer) setup() error {
 	if err != nil {
 		return err
 	}
-	// setup done
-	ab.isSetup = false
 	return nil
 }
 
@@ -193,28 +184,20 @@ func (ab *AlgorandBuffer) Manage() {
 			time.Sleep(ab.MinSleep)
 			continue
 		}
-
-		// setup done
-		ab.isSetup = false
 	}
 }
 
 // manageApplications takes care of deleting and creating applications
 // to make the target account valid.
 func (ab *AlgorandBuffer) manageApplications() error {
-	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
-	if err != nil {
-		return err
-	}
-
 	// Deletion Routine
-	err = ab.manageDeletion(info)
+	err := ab.manageDeletion()
 	if err != nil {
 		return err
 	}
 
 	// Creation Routine
-	err = ab.manageCreation(info)
+	err = ab.manageCreation()
 	if err != nil {
 		return err
 	}
@@ -225,7 +208,12 @@ func (ab *AlgorandBuffer) manageApplications() error {
 // manageCreation creates an Algorand application for the target account.
 // For this to work, the account needs to be valid (i.e. have no registered
 // app and enough funding).
-func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
+func (ab *AlgorandBuffer) manageCreation() error {
+	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
+	if err != nil {
+		return err
+	}
+
 	if client.ValidAccount(info) {
 		return nil
 	}
@@ -238,7 +226,6 @@ func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
 		return err
 	}
 
-	ab.AppChannel <- fmt.Sprintf("created app with ID: <%d>", appId)
 	ab.AppId = appId
 	return nil
 }
@@ -247,7 +234,11 @@ func (ab *AlgorandBuffer) manageCreation(info models.Account) error {
 // don't fulfil the specs of the Algorand buffer (e.g. wrong schema). If
 // the account has several valid applications, then the one with the smallest
 // CreatedAtRound-parameter will be kept. All others will be deleted.
-func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
+func (ab *AlgorandBuffer) manageDeletion() error {
+	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
+	if err != nil {
+		return err
+	}
 	// If no apps exist, no deletion necessary
 	if len(info.CreatedApps) == 0 {
 		return nil
@@ -273,7 +264,6 @@ func (ab *AlgorandBuffer) manageDeletion(info models.Account) error {
 
 				return err
 			}
-			ab.AppChannel <- "deleted successfully"
 		}
 	}
 	return nil

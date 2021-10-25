@@ -63,15 +63,11 @@ func TestAlgorandBuffer_RequireManagement(t *testing.T) {
 func TestAlgorandBuffer_DeletionError(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	go buffer.Manage()
-
 	c.SetError(true, (*client.AlgorandMock).DeleteApplication)
-	select {
-	case <-time.After(50 * time.Millisecond):
-		break
-	case <-buffer.AppChannel:
-		t.Fatalf("AppChannel returned information even though DeleteApplication returns error")
+
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	if err == nil {
+		t.Fatalf("blocking deleteApp doesn't return error.")
 	}
 }
 
@@ -100,10 +96,13 @@ func BufferMakesTargetValid(t *testing.T, buffer *AlgorandBuffer, c client.Algor
 func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	go buffer.Manage()
 
-	BufferMakesTargetValid(t, buffer, c, 3)
+	// Check if client is made valid.
+	assert.False(t, client.ValidAccount(c.Account))
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	assert.True(t, client.ValidAccount(c.Account))
+
+	assert.Nil(t, err)
 }
 
 func TestAlgorandBuffer_DeletePartial(t *testing.T) {
@@ -113,10 +112,11 @@ func TestAlgorandBuffer_DeletePartial(t *testing.T) {
 	// Set one application to have correct schema
 	g, l := client.GenerateSchemasModel()
 	c.Account.CreatedApps[0].Params = models.ApplicationParams{GlobalStateSchema: g, LocalStateSchema: l}
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	go buffer.Manage()
 
-	BufferMakesTargetValid(t, buffer, c, 2)
+	// Check if client is made valid.
+	assert.False(t, client.ValidAccount(c.Account))
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	assert.True(t, client.ValidAccount(c.Account))
 }
 
 // Given several applications with the right schema, delete the one that has
@@ -129,11 +129,12 @@ func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
 	c.Account.CreatedApps[1].CreatedAtRound = 50
 	c.Account.CreatedApps[2].CreatedAtRound = 150
 
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	go buffer.Manage()
+	// Check if client is made valid.
+	assert.False(t, client.ValidAccount(c.Account))
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	assert.True(t, client.ValidAccount(c.Account))
 
-	BufferMakesTargetValid(t, buffer, c, 2)
-
+	// Check if remaining app is the one that was created first
 	assert.EqualValues(t, 50, c.Account.CreatedApps[0].CreatedAtRound)
 }
 
