@@ -35,8 +35,8 @@ type AlgorandBuffer struct {
 }
 
 type ManageConfig struct {
-	// SleepTime is the minimum amount of time the Manage routine will sleep
-	// after failing to execute a blockchain action
+	// SleepTime is the minimum amount of time the Manage routine will sleep aften
+	// failing to execute a blockchain action
 	SleepTime time.Duration
 	// HealthCheckInterval determines the interval between node and application
 	// health checks.
@@ -174,7 +174,7 @@ func (ab *AlgorandBuffer) PutElements(data map[string]string) {
 //
 // The config parameter describes the behavior of the Manage routine, which
 // include sleep time after unsuccessful node calls.
-func (ab *AlgorandBuffer) Manage(config *ManageConfig) {
+func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 	if config == nil {
 		config = GetDefaultManageConfig()
 	}

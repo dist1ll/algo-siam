@@ -3,6 +3,8 @@
 package core
 
 import (
+	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -109,6 +111,28 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
+// Check if Manage() goroutine respects cancel context
+func TestAlgorandBuffer_ManageQuits(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	var wg sync.WaitGroup
+	ctx, _ := context.WithCancel(context.Background())
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		buffer.Manage(ctx, &ManageConfig{})
+	}()
+
+	// cancel()
+
+	if waitTimeout(&wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
+}
+
+
 // Test if buffer restores valid account state after adding an application
 // AFTER the buffer has been verified and initialized
 func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
@@ -119,9 +143,7 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	c.AddDummyApps(56)
 	assert.False(t, client.ValidAccount(c.Account))
 
-	go buffer.Manage(&ManageConfig{
-		SleepTime: 0,
-	})
+	go buffer.Manage(context.Background(), &ManageConfig{})
 
 	// Manage() should make account valid in less than a second
 	now := time.Now()
@@ -144,7 +166,7 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
-	go buffer.Manage(&ManageConfig{})
+	go buffer.Manage(context.Background(), &ManageConfig{})
 
 	// store in buffer
 	values := map[string]string { "2654658" : "Astralis" }
