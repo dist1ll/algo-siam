@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"math"
 	"time"
 
 	"github.com/m2q/aema/core/client"
 
-	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
 
@@ -26,32 +26,31 @@ type AlgorandBuffer struct {
 	AccountCrypt crypto.Account
 	// Client is the wrapping interface for communicating with the node
 	Client client.AlgorandClient
-	// AppChannel returns information every time the application state of
-	// this buffer's account has been mutated (i.e. deleted/created app).
-	// See routine Manage.
-	AppChannel chan string
-	// bufferInitialized is written to after Manage establishes connection to
-	// the node and validates the target account for the first time.
-	bufferInitialized chan string
+	// storeArguments is consumed by the Manage goroutine and writes kv pairs
+	// regularly to the blockchain
+	storeArguments chan models.TealKeyValue
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
-	// isSetup is true if buffer is ready to store and fetch data. Manage
-	// makes sure that target account and node connectivity are valid.
-	isSetup bool
-	//
-	init bool
 }
 
 type ManageConfig struct {
 	// SleepTime is the minimum amount of time the Manage routine will sleep
 	// after failing to execute a blockchain action
 	SleepTime time.Duration
+	// HealthCheckInterval determines the interval between node and application
+	// health checks.
+	HealthCheckInterval time.Duration
+	// ChannelPollFrequency determines how much time passes between subsequent
+	// checks of the store/delete channels.
+	ChannelPollFrequency time.Duration
 }
 
 func GetDefaultManageConfig() *ManageConfig {
 	return &ManageConfig{
 		SleepTime: client.AlgorandDefaultMinSleep,
+		HealthCheckInterval: time.Millisecond,
+		ChannelPollFrequency: time.Microsecond,
 	}
 }
 
@@ -81,11 +80,10 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	}
 
 	buffer := &AlgorandBuffer{
-		Client:            c,
-		AccountCrypt:      account,
-		AppChannel:        make(chan string),
-		bufferInitialized: make(chan string),
-		timeoutLength:     client.AlgorandDefaultTimeout,
+		Client:         c,
+		AccountCrypt:   account,
+		storeArguments: make(chan models.TealKeyValue, 64),
+		timeoutLength:  client.AlgorandDefaultTimeout,
 	}
 
 	err = buffer.ensureRemoteValid()
@@ -144,28 +142,8 @@ func (ab *AlgorandBuffer) Health() error {
 	return err
 }
 
-// GetApplication returns the application that handles the algo buffer. Returns an error
-// if the associated address URL has zero or more than one application.
-func (ab *AlgorandBuffer) GetApplication() (models.Application, error) {
-	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), context.Background())
-	if err != nil {
-		return models.Application{}, err
-	}
-	if len(info.CreatedApps) == 0 {
-		return models.Application{}, &NoApplication{Account: ab.AccountCrypt}
-	}
-	if len(info.CreatedApps) > 1 {
-		return models.Application{}, &TooManyApplications{Account: ab.AccountCrypt, Apps: info.CreatedApps}
-	}
-
-	return info.CreatedApps[0], nil
-}
-
 // GetBuffer returns the stored global state of this buffers algorand application
 func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
-	if !ab.isSetup {
-		panic("need to run 'buffer.Setup()' before being able to fetch data")
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
 	app, err := ab.Client.GetApplicationByID(ab.AppId, ctx)
 	cancel()
@@ -180,9 +158,11 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 	return m, nil
 }
 
-func (ab *AlgorandBuffer) PutElements(elements map[string]string) {
-	if !ab.isSetup {
-		panic("need to run  'buffer.Setup()' before being able to store")
+// PutElements stores given key-value pairs. Existing keys will be overridden,
+// non-existing keys will be created.
+func (ab *AlgorandBuffer) PutElements(data map[string]string) {
+	for k, v := range data {
+		ab.storeArguments <- models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: v}}
 	}
 }
 
@@ -199,12 +179,38 @@ func (ab *AlgorandBuffer) Manage(config *ManageConfig) {
 		config = GetDefaultManageConfig()
 	}
 
+	// key-value arguments for application
+	kvArray := make([]models.TealKeyValue, 0, client.MaxKVArgs)
+
 	for {
 		err := ab.ensureRemoteValid()
 		if err != nil {
 			time.Sleep(config.SleepTime)
 			continue
 		}
+
+		// wait for channel to be filled
+		for now := time.Now(); len(ab.storeArguments) == 0; {
+			// if loop exceeds HealthCheckInterval, restart
+			if  time.Now().Sub(now) > config.SleepTime {
+				time.Sleep(config.HealthCheckInterval)
+				continue
+			}
+		}
+
+		// unwrap store argument channel
+		for len(ab.storeArguments) != 0 && len(kvArray) <= client.MaxKVArgs{
+			kvArray = append(kvArray, <- ab.storeArguments)
+		}
+
+		err = ab.Client.StoreGlobals(ab.AccountCrypt, kvArray)
+		for err != nil {
+			time.Sleep(config.SleepTime)
+			continue
+		}
+
+		// if successful, delete kv arguments
+		kvArray = make([]models.TealKeyValue, 0, client.MaxKVArgs)
 	}
 }
 

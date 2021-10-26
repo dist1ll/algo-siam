@@ -185,3 +185,9 @@ func (a *AlgorandMock) CreateApplication(account crypto.Account, approve string,
 	a.Account.CreatedApps = []models.Application{a.App}
 	return a.App.Id, nil
 }
+
+func (a *AlgorandMock) StoreGlobals(acc crypto.Account, kv []models.TealKeyValue) error {
+	a.App.Params.GlobalState = kv
+	a.Account.CreatedApps[0] = a.App
+	return nil
+}

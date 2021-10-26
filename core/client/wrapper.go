@@ -138,3 +138,7 @@ func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approv
 	}
 	return confirmedTxn.ApplicationIndex, nil
 }
+
+func (a *AlgorandClientWrapper) StoreGlobals(crypto.Account, []models.TealKeyValue) error {
+	return nil
+}

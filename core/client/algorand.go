@@ -21,6 +21,9 @@ const localBytes = 0
 const globalInts = 0
 const globalBytes = 64
 
+// Arguments
+const MaxKVArgs = 15
+
 const AlgorandDefaultTimeout time.Duration = time.Second * 20
 const AlgorandDefaultMinSleep time.Duration = time.Second * 5
 
@@ -43,7 +46,10 @@ type AlgorandClient interface {
 
 	// CreateApplication creates a new application with given teal code. It will wait
 	// for a confirmation from the node, and is blocking. Returns AppId.
-	CreateApplication(account crypto.Account, approval string, clear string) (uint64, error)
+	CreateApplication(acc crypto.Account, approval string, clear string) (uint64, error)
+
+	// StoreGlobals stores a given array of TEAL key-value pairs
+	StoreGlobals(crypto.Account, []models.TealKeyValue) error
 }
 
 // GeneratePrivateKey64 returns a random, base64-encoded private key.

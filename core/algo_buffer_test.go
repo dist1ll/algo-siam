@@ -42,22 +42,6 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 	assert.NotEqual(t, models.Account{}, buffer.AccountCrypt)
 }
 
-// Without calling buffer's Manage() function, storing on and loading from
-// the buffer is invalid and should result in a panic
-func TestAlgorandBuffer_RequireManagement(t *testing.T) {
-	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-
-	shouldPanicGet := func() {
-		_, _ = buffer.GetBuffer()
-	}
-	shouldPanicStore := func() {
-		buffer.PutElements(make(map[string]string, 3))
-	}
-	assert.Panics(t, shouldPanicGet)
-	assert.Panics(t, shouldPanicStore)
-}
-
 // AppChannel should not return anything if the DeleteApplication function
 // returns errors.
 func TestAlgorandBuffer_DeletionError(t *testing.T) {
@@ -68,28 +52,6 @@ func TestAlgorandBuffer_DeletionError(t *testing.T) {
 	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err == nil {
 		t.Fatalf("blocking deleteApp doesn't return error.")
-	}
-}
-
-// BufferMakesTargetValid is a helper method that tests if the buffer brings
-// the target account into a valid application state. A valid state means
-// that the account has exactly one application, with the correct schema.
-// `maxIter` specifies the maximum number of AppChannel callbacks before
-// defaulting to a fatal error.
-func BufferMakesTargetValid(t *testing.T, buffer *AlgorandBuffer, c client.AlgorandClient, maxIter int) {
-	acc, _ := c.AccountInformation("", nil)
-
-	for i := 0; !client.ValidAccount(acc); i++ {
-		select {
-		case <-time.After(500 * time.Millisecond):
-			t.Fatalf("Manage() didn't mutate application in time")
-		case <-buffer.AppChannel:
-			acc, _ = c.AccountInformation("", nil)
-		}
-
-		if i >= maxIter {
-			t.Fatalf("loop condition not fulfilled after %d channel writes", maxIter)
-		}
 	}
 }
 
@@ -124,7 +86,6 @@ func TestAlgorandBuffer_DeletePartial(t *testing.T) {
 func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
-
 	c.Account.CreatedApps[0].CreatedAtRound = 200
 	c.Account.CreatedApps[1].CreatedAtRound = 50
 	c.Account.CreatedApps[2].CreatedAtRound = 150
@@ -156,7 +117,9 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	c.AddDummyApps(56)
 	assert.False(t, client.ValidAccount(c.Account))
 
-	go buffer.Manage(nil)
+	go buffer.Manage(&ManageConfig{
+		SleepTime: 0,
+	})
 
 	// Manage() should make account valid in less than a second
 	now := time.Now()
@@ -164,4 +127,33 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	assert.True(t, client.ValidAccount(c.Account))
+}
+
+func TestAlgorandBuffer_GetBuffer(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	data, err := buffer.GetBuffer()
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+	assert.Len(t, data, 0)
+}
+
+func TestAlgorandBuffer_PutElements(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	go buffer.Manage(&ManageConfig{})
+
+	// store in buffer
+	values := map[string]string { "2654658" : "Astralis" }
+	buffer.PutElements(values)
+	d, _ := buffer.GetBuffer()
+
+	// buffer should be non-zero within a second
+	now := time.Now()
+	for ; len(d) == 0 && time.Now().Sub(now) < time.Second; d, _ = buffer.GetBuffer() {
+		time.Sleep(time.Millisecond)
+	}
+	d, _ = buffer.GetBuffer()
+	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
 }

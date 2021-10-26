@@ -7,9 +7,8 @@ type Buffer interface {
 	// elements. See BusyBuffer error.
 	GetBuffer() (map[string]string, error)
 	// PutElements stores given key-value pairs. Existing keys will be
-	// overridden, non-existing keys will be created. Returns 0 if the
-	// action was successful.
-	PutElements(kv map[string]string) int
+	// overridden, non-existing keys will be created.
+	PutElements(kv map[string]string)
 	// DeleteElements removes given keys from buffer. Does nothing
 	// if key doesn't exist.
 	DeleteElements(keys ...string)
