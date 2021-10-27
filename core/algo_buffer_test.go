@@ -116,22 +116,47 @@ func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
+	c.SetError(true, (*client.AlgorandMock).HealthCheck)
+
 	var wg sync.WaitGroup
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		buffer.Manage(ctx, &ManageConfig{})
+		buffer.Manage(ctx, &ManageConfig{SleepTime: time.Minute})
 	}()
 
-	// cancel()
+	time.Sleep(time.Millisecond * 10)
+
+	cancel()
 
 	if waitTimeout(&wg, time.Second) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
 
+// Check if Manage() goroutine respects cancel, when no arguments are put
+// into the buffer, and the health check times are very long
+func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		buffer.Manage(ctx, &ManageConfig{SleepTime: time.Minute, HealthCheckInterval: time.Minute})
+	}()
+
+	time.Sleep(time.Millisecond * 10)
+	cancel()
+	if waitTimeout(&wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
+}
 
 // Test if buffer restores valid account state after adding an application
 // AFTER the buffer has been verified and initialized

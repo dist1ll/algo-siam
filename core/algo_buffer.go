@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"math"
 	"time"
+
+	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 
 	"github.com/m2q/aema/core/client"
 
@@ -48,8 +49,8 @@ type ManageConfig struct {
 
 func GetDefaultManageConfig() *ManageConfig {
 	return &ManageConfig{
-		SleepTime: client.AlgorandDefaultMinSleep,
-		HealthCheckInterval: time.Millisecond,
+		SleepTime:            client.AlgorandDefaultMinSleep,
+		HealthCheckInterval:  time.Millisecond,
 		ChannelPollFrequency: time.Microsecond,
 	}
 }
@@ -64,7 +65,6 @@ func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	}
 	return CreateAlgorandBuffer(a, base64key)
 }
-
 
 // CreateAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
 func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
@@ -86,7 +86,9 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 		timeoutLength:  client.AlgorandDefaultTimeout,
 	}
 
-	err = buffer.ensureRemoteValid()
+	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
+	err = buffer.ensureRemoteValid(ctx)
+	cancel()
 	if err != nil {
 		return buffer, err
 	}
@@ -100,7 +102,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 // (see CreateAlgorandBuffer).
 //
 // If the target account is valid and the node is healthy, this function does nothing.
-func (ab *AlgorandBuffer) ensureRemoteValid() error {
+func (ab *AlgorandBuffer) ensureRemoteValid(ctx context.Context) error {
 	// Connectivity check
 	err := ab.checkConnection()
 	if err != nil {
@@ -179,38 +181,52 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		config = GetDefaultManageConfig()
 	}
 
-	// key-value arguments for application
-	kvArray := make([]models.TealKeyValue, 0, client.MaxKVArgs)
+	// ALL proposed key-value pairs for application
+	kvArray := make([]models.TealKeyValue, 0, 1000)
 
-	for {
-		err := ab.ensureRemoteValid()
+	for ctx.Err() == nil {
+		err := ab.ensureRemoteValid(ctx)
 		if err != nil {
-			time.Sleep(config.SleepTime)
-			continue
-		}
-
-		// wait for channel to be filled
-		for now := time.Now(); len(ab.storeArguments) == 0; {
-			// if loop exceeds HealthCheckInterval, restart
-			if  time.Now().Sub(now) > config.SleepTime {
-				time.Sleep(config.HealthCheckInterval)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(config.SleepTime):
 				continue
 			}
 		}
 
-		// unwrap store argument channel
-		for len(ab.storeArguments) != 0 && len(kvArray) <= client.MaxKVArgs{
-			kvArray = append(kvArray, <- ab.storeArguments)
+		// If no arguments, wait for arguments (or until a health check
+		// needs to be made)
+		if len(kvArray) == 0 {
+			select {
+			case <- ctx.Done():
+				return
+			case kv := <- ab.storeArguments:
+				kvArray = append(kvArray, kv)
+			case <- time.After(config.HealthCheckInterval):
+				continue
+			}
 		}
 
+
+		// unwrap the rest of the store args
+		for len(ab.storeArguments) != 0 && len(kvArray) <= client.MaxKVArgs {
+			kvArray = append(kvArray, <-ab.storeArguments)
+		}
+
+		// attempt to store data
 		err = ab.Client.StoreGlobals(ab.AccountCrypt, kvArray)
-		for err != nil {
-			time.Sleep(config.SleepTime)
-			continue
+		if err != nil {
+			select {
+			case <- ctx.Done():
+				return
+			case <- time.After(config.SleepTime):
+				continue
+			}
 		}
 
-		// if successful, delete kv arguments
-		kvArray = make([]models.TealKeyValue, 0, client.MaxKVArgs)
+		// if successful, delete kvArray
+		kvArray = make([]models.TealKeyValue, 0, 1000)
 	}
 }
 
