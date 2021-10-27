@@ -48,10 +48,12 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 	return buffer
 }
 
+// Test if app removal works
 func TestIntegration_RemoveAccount(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
 }
 
+// Remove application, and see if Manage re-creates the application
 func TestIntegration_AccountGetsRestored(t *testing.T) {
 	buffer := createBufferAndRemoveApps(t)
 

@@ -170,10 +170,17 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 
 // PutElements stores given key-value pairs. Existing keys will be overridden,
 // non-existing keys will be created.
-func (ab *AlgorandBuffer) PutElements(data map[string]string) {
+func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
 	for k, v := range data {
 		ab.storeArguments <- models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: v}}
 	}
+	return nil
+}
+
+// DeleteElements removes given keys from the buffer. If a key is supplied that
+// doesn't exist, nothing happens.
+func (ab *AlgorandBuffer) DeleteElements(keys ...string) {
+
 }
 
 // Manage is a constantly running routine that manages the lifecycle of the

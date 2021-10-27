@@ -220,7 +220,8 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 
 	// store in buffer
 	values := map[string]string { "2654658" : "Astralis" }
-	buffer.PutElements(values)
+	err := buffer.PutElements(values)
+	assert.Nil(t, err)
 	d, _ := buffer.GetBuffer()
 
 	// buffer should be non-zero within a second
