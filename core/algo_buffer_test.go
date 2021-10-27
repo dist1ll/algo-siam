@@ -46,6 +46,24 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 	assert.NotEqual(t, models.Account{}, buffer.AccountCrypt)
 }
 
+// If the target account is valid, correctly funded and has a valid application,
+// then after the buffer has been initialized, it should have valid fields
+func TestAlgorandBuffer_CorrectBufferWhenValid(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	c.CreateDummyApps(6)
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := buffer.Client.AccountInformation(buffer.AccountCrypt.Address.String(), context.Background())
+	if err != nil {
+		t.Fatalf("eror getting account info %s", err)
+	}
+	assert.Equal(t, 1, len(info.CreatedApps))
+	assert.EqualValues(t, 6, buffer.AppId)
+}
+
 // AppChannel should not return anything if the DeleteApplication function
 // returns errors.
 func TestAlgorandBuffer_DeletionError(t *testing.T) {
