@@ -111,7 +111,12 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
-// Check if Manage() goroutine respects cancel context
+// Check if Manage() goroutine quits, when we cancel the provided context
+// Whenever the Manage() routine receives errors from the node or application,
+// it may fall asleep for a certain amount of time (to not ddos a server that
+// might have some problems).
+// The *_ManageQuits* tests make sure that the cancel() call is respected in
+// every situation.
 func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
@@ -137,7 +142,7 @@ func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 }
 
 // Check if Manage() goroutine respects cancel, when no arguments are put
-// into the buffer, and the health check times are very long
+// into the buffer, and the health check times are very long.
 func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
@@ -148,7 +153,9 @@ func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		buffer.Manage(ctx, &ManageConfig{SleepTime: time.Minute, HealthCheckInterval: time.Minute})
+		buffer.Manage(ctx, &ManageConfig{
+			SleepTime: time.Minute,
+			HealthCheckInterval: time.Minute})
 	}()
 
 	time.Sleep(time.Millisecond * 10)

@@ -121,6 +121,14 @@ func (ab *AlgorandBuffer) ensureRemoteValid(ctx context.Context) error {
 		return err
 	}
 
+	// Set AppID correctly
+	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
+	info, err := ab.Client.AccountInformation(ab.AccountCrypt.Address.String(), ctx)
+	cancel()
+	if err != nil {
+		return err
+	}
+	ab.AppId = info.CreatedApps[0].Id
 	return nil
 }
 
