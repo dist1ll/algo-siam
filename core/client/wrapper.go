@@ -139,6 +139,43 @@ func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approv
 	return confirmedTxn.ApplicationIndex, nil
 }
 
-func (a *AlgorandClientWrapper) StoreGlobals(crypto.Account, []models.TealKeyValue) error {
+func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint64, tkv []models.TealKeyValue) error {
+	_, err := a.SuggestedParams(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting suggested tx params: %s", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
+	params, _ := a.SuggestedParams(ctx)
+	params.FlatFee = true
+	params.Fee = 1000
+	cancel()
+
+	txn, _ := future.MakeApplicationNoOpTx(0, nil,
+		nil, nil, nil, params, account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+
+	// Sign the transaction
+	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
+	if err != nil {
+		return nil
+	}
+
+	// Submit the transaction
+	_, err = a.SendRawTransaction(signedTxn, context.Background())
+	if err != nil {
+		return err
+	}
+	// Wait for confirmation
+	_, err = WaitForConfirmation(txID, a, 5)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
+	_, _, err = a.PendingTransactionInformation(txID, ctx)
+	cancel()
+	if err != nil {
+		return err
+	}
 	return nil
 }

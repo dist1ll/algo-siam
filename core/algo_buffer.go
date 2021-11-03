@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
@@ -183,6 +184,20 @@ func (ab *AlgorandBuffer) DeleteElements(keys ...string) {
 
 }
 
+// SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage
+// and cancel function to signal termination, and a WaitGroup to wait for the cancellation
+// to be completed.
+func (ab *AlgorandBuffer) SpawnManagingRoutine() (*sync.WaitGroup, context.CancelFunc) {
+    var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ab.Manage(ctx, &ManageConfig{})
+	}()
+	return &wg, cancel
+}
+
 // Manage is a constantly running routine that manages the lifecycle of the
 // AlgorandBuffer. It performs continuous checks against the node, smart
 // contract, application state and funding amount. Manage takes care of
@@ -230,7 +245,7 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		}
 
 		// attempt to store data
-		err = ab.Client.StoreGlobals(ab.AccountCrypt, kvArray)
+		err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
 		if err != nil {
 			select {
 			case <- ctx.Done():

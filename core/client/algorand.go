@@ -49,7 +49,7 @@ type AlgorandClient interface {
 	CreateApplication(acc crypto.Account, approval string, clear string) (uint64, error)
 
 	// StoreGlobals stores a given array of TEAL key-value pairs
-	StoreGlobals(crypto.Account, []models.TealKeyValue) error
+	StoreGlobals(crypto.Account, uint64, []models.TealKeyValue) error
 }
 
 // GeneratePrivateKey64 returns a random, base64-encoded private key.

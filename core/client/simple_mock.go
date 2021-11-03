@@ -186,7 +186,10 @@ func (a *AlgorandMock) CreateApplication(account crypto.Account, approve string,
 	return a.App.Id, nil
 }
 
-func (a *AlgorandMock) StoreGlobals(acc crypto.Account, kv []models.TealKeyValue) error {
+func (a *AlgorandMock) StoreGlobals(acc crypto.Account, appId uint64, kv []models.TealKeyValue) error {
+	if a.App.Id != appId {
+		return errors.New("incorrect appId provided")
+	}
 	a.App.Params.GlobalState = kv
 	a.Account.CreatedApps[0] = a.App
 	return nil
