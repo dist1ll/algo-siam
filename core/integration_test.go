@@ -92,9 +92,8 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 
 		// Execute Transaction
 		ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
-		err = buffer.Client.ExecuteTransaction(txn, ctx)
+		err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
 		cancel()
-		assert.NotNil(t, err, "transaction needs to be rejected if it has an non-permissible OC op")
 	}
 }
 //func TestIntegration_PushData(t *testing.T) {

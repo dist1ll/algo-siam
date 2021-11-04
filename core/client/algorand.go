@@ -43,7 +43,7 @@ type AlgorandClient interface {
 
 	// ExecuteTransaction executes a given transaction, waits for the response,
 	// and returns potential errors.
-	ExecuteTransaction(types.Transaction, context.Context) error
+	ExecuteTransaction(crypto.Account, types.Transaction, context.Context) error
 
 	// DeleteApplication deletes an application with given ID from a given account.
 	// If the account has no apps, or none of its apps have the correct ID, then an

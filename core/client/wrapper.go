@@ -57,8 +57,24 @@ func (a *AlgorandClientWrapper) TealCompile(b []byte, ctx context.Context) (resp
 	return a.Client.TealCompile(b).Do(ctx)
 }
 
-func (a *AlgorandClientWrapper) ExecuteTransaction(types.Transaction, context.Context) error {
-	return nil
+func (a *AlgorandClientWrapper) ExecuteTransaction(acc crypto.Account, txn types.Transaction, ctx context.Context) error {
+	_, signedTxn, err := crypto.SignTransaction(acc.PrivateKey, txn)
+	if err != nil {
+		return err
+	}
+
+	txID, err := a.SendRawTransaction(signedTxn, ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = WaitForConfirmation(txID, a, 5)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = a.PendingTransactionInformation(txID, ctx)
+	return err
 }
 
 func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint64) error {
