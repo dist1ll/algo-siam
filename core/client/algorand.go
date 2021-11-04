@@ -96,10 +96,12 @@ func FulfillsSchema(app models.Application) bool {
 	return true
 }
 
-
-func GenerateTransaction(a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) types.Transaction {
+// GenerateApplicationCallTx generates a mostly empty application call transaction, with the
+// given OC type.
+func GenerateApplicationCallTx(a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) types.Transaction {
 	return types.Transaction{}
 }
+
 func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
 	compileResponse, err := client.TealCompile(program, context.Background())
 	if err != nil {

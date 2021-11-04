@@ -68,6 +68,26 @@ func TestSmartContract_DeleteWrongAcc(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// Checks if client.GenerateApplicationCallTx creates a noop transaction that gets accepted
+// by the smart contract
+func TestSmartContract_GenerateTransaction(t *testing.T) {
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
+
+	// Get Parameters
+	params, err := buffer.Client.SuggestedParams(context.Background())
+	assert.Nil(t, err)
+
+	// NoOp Application call from original creator
+	txn := client.GenerateApplicationCallTx(buffer.AccountCrypt, params, types.NoOpOC)
+
+	// Execute Transaction
+	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
+	err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
+	cancel()
+	assert.Nil(t, err)
+}
+
 // Test if the smart contract rejects ClearState, CloseOut, OptIn, and
 // Update.
 func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
@@ -88,7 +108,7 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 
 	// Deny every transaction with the
 	for _, oc := range denyOc {
-		txn := client.GenerateTransaction(buffer.AccountCrypt, params, oc)
+		txn := client.GenerateApplicationCallTx(buffer.AccountCrypt, params, oc)
 
 		// Execute Transaction
 		ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
