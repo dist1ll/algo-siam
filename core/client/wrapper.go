@@ -124,6 +124,7 @@ func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approv
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println("create done")
 	// Wait for confirmation
 	_, err = WaitForConfirmation(txID, a, 5)
 	if err != nil {
@@ -144,16 +145,32 @@ func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint6
 	if err != nil {
 		return fmt.Errorf("error getting suggested tx params: %s", err)
 	}
-
+	fmt.Println("attempting to store globals")
 	ctx, cancel := context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
 	params, _ := a.SuggestedParams(ctx)
 	params.FlatFee = true
 	params.Fee = 1000
 	cancel()
 
-	txn, _ := future.MakeApplicationNoOpTx(0, nil,
-		nil, nil, nil, params, account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
-
+	//txn, _ := future.MakeApplicationNoOpTx(appId, nil,
+	//	nil, nil, nil, params, account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+	txn, _ := future.MakeApplicationCallTx(
+		appId,
+		nil,
+		nil,
+		nil,
+		nil,
+		0,
+		[]byte(""),
+		[]byte(""),
+		types.StateSchema{},
+		types.StateSchema{},
+		params,
+		account.Address,
+		[]byte(""),
+		types.Digest{},
+		[32]byte{},
+		types.Address{})
 	// Sign the transaction
 	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
 	if err != nil {

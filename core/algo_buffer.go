@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -276,7 +277,8 @@ func (ab *AlgorandBuffer) manageCreation() error {
 		return errors.New("must delete invalid applications before creating new one")
 	}
 
-	appId, err := ab.Client.CreateApplication(ab.AccountCrypt, "#pragma version 4\nint 1", "#pragma version 4\nint 1")
+	fmt.Println(client.ApproveTeal)
+	appId, err := ab.Client.CreateApplication(ab.AccountCrypt, client.ApproveTeal, client.ClearTeal)
 	if err != nil {
 		return err
 	}
