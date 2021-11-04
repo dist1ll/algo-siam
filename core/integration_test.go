@@ -5,6 +5,7 @@ package core
 import (
 	"context"
 	"github.com/algorand/go-algorand-sdk/crypto"
+	"github.com/algorand/go-algorand-sdk/types"
 	"testing"
 	"time"
 
@@ -67,6 +68,35 @@ func TestSmartContract_DeleteWrongAcc(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// Test if the smart contract rejects ClearState, CloseOut, OptIn, and
+// Update.
+func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
+
+	// OnCompletion Teal ops that should be rejected
+	denyOc := []types.OnCompletion {
+		types.ClearStateOC,
+		types.OptInOC,
+		types.CloseOutOC,
+		types.UpdateApplicationOC,
+	}
+
+	// Get Parameters
+	params, err := buffer.Client.SuggestedParams(context.Background())
+	assert.Nil(t, err)
+
+	// Deny every transaction with the
+	for _, oc := range denyOc {
+		txn := client.GenerateTransaction(buffer.AccountCrypt, params, oc)
+
+		// Execute Transaction
+		ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
+		err = buffer.Client.ExecuteTransaction(txn, ctx)
+		cancel()
+		assert.NotNil(t, err, "transaction needs to be rejected if it has an non-permissible OC op")
+	}
+}
 //func TestIntegration_PushData(t *testing.T) {
 //	buffer, err := CreateAlgorandBufferFromEnv()
 //	assert.Nil(t, err)

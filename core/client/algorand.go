@@ -24,7 +24,7 @@ const globalBytes = 64
 // Arguments
 const MaxKVArgs = 15
 
-const AlgorandDefaultTimeout time.Duration = time.Second * 20
+const AlgorandDefaultTimeout time.Duration = time.Second * 30
 const AlgorandDefaultMinSleep time.Duration = time.Second * 5
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
@@ -40,6 +40,10 @@ type AlgorandClient interface {
 	SendRawTransaction([]byte, context.Context) (string, error)
 	PendingTransactionInformation(string, context.Context) (models.PendingTransactionInfoResponse, types.SignedTxn, error)
 	TealCompile([]byte, context.Context) (models.CompileResponse, error)
+
+	// ExecuteTransaction executes a given transaction, waits for the response,
+	// and returns potential errors.
+	ExecuteTransaction(types.Transaction, context.Context) error
 
 	// DeleteApplication deletes an application with given ID from a given account.
 	// If the account has no apps, or none of its apps have the correct ID, then an
@@ -92,6 +96,10 @@ func FulfillsSchema(app models.Application) bool {
 	return true
 }
 
+
+func GenerateTransaction(a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) types.Transaction {
+	return types.Transaction{}
+}
 func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {
 	compileResponse, err := client.TealCompile(program, context.Background())
 	if err != nil {

@@ -151,6 +151,10 @@ func (a *AlgorandMock) TealCompile([]byte, context.Context) (models.CompileRespo
 	return ret.(models.CompileResponse), err
 }
 
+func (a *AlgorandMock) ExecuteTransaction(types.Transaction, context.Context) error {
+	panic("AlgorandStub doesn't stub this method")
+	return nil
+}
 
 func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error {
 	_, err := a.wrapExecutionCondition(nil, nil, (*AlgorandMock).DeleteApplication)

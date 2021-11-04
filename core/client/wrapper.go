@@ -57,6 +57,10 @@ func (a *AlgorandClientWrapper) TealCompile(b []byte, ctx context.Context) (resp
 	return a.Client.TealCompile(b).Do(ctx)
 }
 
+func (a *AlgorandClientWrapper) ExecuteTransaction(types.Transaction, context.Context) error {
+	return nil
+}
+
 func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint64) error {
 	_, err := a.SuggestedParams(context.Background())
 	if err != nil {
