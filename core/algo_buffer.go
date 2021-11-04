@@ -59,7 +59,7 @@ func GetDefaultManageConfig() *ManageConfig {
 // CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment
 // variables. See README.md for more information.
 func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
-	url, token, base64key := GetAlgorandEnvironmentVars()
+	url, token, base64key := client.GetAlgorandEnvironmentVars()
 	a, err := client.CreateAlgorandClientWrapper(url, token)
 	if err != nil {
 		return nil, err

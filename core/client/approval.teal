@@ -1,4 +1,28 @@
-#pragma version 4
-int 1
+#pragma version 5
+// Allow Creation
+txn ApplicationID
+int 0
+==
+bnz create
 
-txn ApplicationArgs
+// Delete App allow only by Creator
+txn OnCompletion
+int DeleteApplication
+==
+bnz allowOnlyCreator
+
+///////////////
+// Functions //
+///////////////
+
+// Quit and Accept only if sent by Creator
+allowOnlyCreator:
+txn Sender
+global CreatorAddress
+==
+return
+
+// Accept creation transaction
+create:
+int 1
+return

@@ -4,16 +4,18 @@ package core
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/m2q/aema/core/client"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 // Note: During integration tests, we need to make sure that there's no
 // leak of goroutines. Because of this, every test will check for routine
-// exits with WaitGroups
+// exits with WaitGroups returned by the SpawnManagingRoutine method of
+// AlgorandBuffer
 
 func TestIntegration_ValidAccount(t *testing.T) {
 	buffer, err := CreateAlgorandBufferFromEnv()
@@ -49,29 +51,34 @@ func TestIntegration_AccountGetsRestored(t *testing.T) {
 	}
 }
 
-func TestIntegration_PushData(t *testing.T) {
-	buffer, err := CreateAlgorandBufferFromEnv()
-	assert.Nil(t, err)
+// Check if smart contract only allows deletion from an creator acc.
+func TestSmartContract_DeleteWrongAcc(t *testing.T) {
 
-	wg, cancel := buffer.SpawnManagingRoutine()
-
-	err = buffer.PutElements(map[string]string{
-		"554213" : "Astralis",
-	})
-	assert.Nil(t, err)
-
-	data, err := buffer.GetBuffer()
-	for len(data) == 0 {
-		assert.Nil(t, err)
-		time.Sleep(time.Millisecond * 200)
-		data, err = buffer.GetBuffer()
-	}
-	assert.EqualValues(t, 1, len(data))
-	t.Logf("data correctly inserted: [%s]", data)
-
-	// Make sure goroutine cancels in time
-	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
 }
+
+//func TestIntegration_PushData(t *testing.T) {
+//	buffer, err := CreateAlgorandBufferFromEnv()
+//	assert.Nil(t, err)
+//
+//	wg, cancel := buffer.SpawnManagingRoutine()
+//
+//	err = buffer.PutElements(map[string]string{
+//		"554213" : "Astralis",
+//	})
+//	assert.Nil(t, err)
+//
+//	data, err := buffer.GetBuffer()
+//	for len(data) == 0 {
+//		assert.Nil(t, err)
+//		time.Sleep(time.Millisecond * 200)
+//		data, err = buffer.GetBuffer()
+//	}
+//	assert.EqualValues(t, 1, len(data))
+//	t.Logf("data correctly inserted: [%s]", data)
+//
+//	// Make sure goroutine cancels in time
+//	cancel()
+//	if waitTimeout(wg, time.Second) {
+//		t.Fatalf("goroutine didn't finish in time")
+//	}
+//}

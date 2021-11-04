@@ -28,6 +28,8 @@ const AlgorandDefaultTimeout time.Duration = time.Second * 20
 const AlgorandDefaultMinSleep time.Duration = time.Second * 5
 
 // AlgorandClient provides a wrapper interface around the go-algorand-sdk client.
+// It also provides several useful abstractions for maintaining consistent
+// application state.
 type AlgorandClient interface {
 	SuggestedParams(context.Context) (types.SuggestedParams, error)
 	HealthCheck(context.Context) error
