@@ -4,6 +4,7 @@ package core
 
 import (
 	"context"
+	"github.com/algorand/go-algorand-sdk/crypto"
 	"testing"
 	"time"
 
@@ -53,7 +54,17 @@ func TestIntegration_AccountGetsRestored(t *testing.T) {
 
 // Check if smart contract only allows deletion from an creator acc.
 func TestSmartContract_DeleteWrongAcc(t *testing.T) {
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
 
+	// Random Account deleting app should throw error
+	randomAcc := crypto.GenerateAccount()
+	err = buffer.Client.DeleteApplication(randomAcc, buffer.AppId)
+	assert.NotNil(t, err)
+
+	// Creator account deleting app should pass without problems
+	err = buffer.Client.DeleteApplication(buffer.AccountCrypt, buffer.AppId)
+	assert.Nil(t, err)
 }
 
 //func TestIntegration_PushData(t *testing.T) {
