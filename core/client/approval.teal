@@ -56,7 +56,18 @@ b l_arg
 // Which action we take depends on the msg
 // left in the note field.
 select_option:
-b store
+txn Note
+byte "put"
+b==
+bnz store
+
+txn Note
+byte "delete"
+b==
+bnz delete
+
+// if the note contains anything else, fail
+b reject
 
 // This is the <delete> option
 delete:

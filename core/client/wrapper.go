@@ -178,7 +178,7 @@ func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint6
 	}
 
 	txn, _ := future.MakeApplicationNoOpTx(appId, args,
-		nil, nil, nil, params, account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
+		nil, nil, nil, params, account.Address, []byte("put"), types.Digest{}, [32]byte{}, types.Address{})
 
 	// Sign the transaction
 	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
