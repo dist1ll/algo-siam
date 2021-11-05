@@ -171,7 +171,13 @@ func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint6
 	params.Fee = 1000
 	cancel()
 
-	txn, _ := future.MakeApplicationNoOpTx(appId, nil,
+	args := make([][]byte, len(tkv) * 2)
+	for i, kv := range tkv {
+		args[i * 2] = []byte(kv.Key)
+		args[i * 2 + 1] = []byte(kv.Value.Bytes)
+	}
+
+	txn, _ := future.MakeApplicationNoOpTx(appId, args,
 		nil, nil, nil, params, account.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
 
 	// Sign the transaction

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -247,6 +248,7 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		// attempt to store data
 		err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
 		if err != nil {
+			fmt.Println(err)
 			select {
 			case <- ctx.Done():
 				return

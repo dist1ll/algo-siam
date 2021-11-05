@@ -24,6 +24,47 @@ int NoOp
 bz reject
 
 main:
+// if no arguments, just end
+txn NumAppArgs
+int 0
+==
+bnz allow
+
+// This loop brings all the args on the stack
+l_arg:
+// if index >= Number of Arguments, store args
+load 1
+txn NumAppArgs
+>=
+bnz store
+
+// get index from scratch space
+load 1
+txnas ApplicationArgs
+// increment index and save
+load 1
+int 1
++
+store 1
+// continue loop
+b l_arg
+
+// All the args are now on the stack
+store:
+app_global_put
+// decrement index now until all kv pairs
+load 1
+int 2
+-
+store 1
+
+// If index is still > 0, repeat storage
+load 1
+int 0
+>
+bnz store
+
+// finish
 int 1
 return
 

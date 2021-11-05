@@ -121,29 +121,64 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
-//func TestIntegration_PushData(t *testing.T) {
-//	buffer, err := CreateAlgorandBufferFromEnv()
-//	assert.Nil(t, err)
-//
-//	wg, cancel := buffer.SpawnManagingRoutine()
-//
-//	err = buffer.PutElements(map[string]string{
-//		"554213" : "Astralis",
-//	})
-//	assert.Nil(t, err)
-//
-//	data, err := buffer.GetBuffer()
-//	for len(data) == 0 {
-//		assert.Nil(t, err)
-//		time.Sleep(time.Millisecond * 200)
-//		data, err = buffer.GetBuffer()
-//	}
-//	assert.EqualValues(t, 1, len(data))
-//	t.Logf("data correctly inserted: [%s]", data)
-//
-//	// Make sure goroutine cancels in time
-//	cancel()
-//	if waitTimeout(wg, time.Second) {
-//		t.Fatalf("goroutine didn't finish in time")
-//	}
-//}
+
+func TestSmartContract_PushData(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
+	wg, cancel := buffer.SpawnManagingRoutine()
+
+	err = buffer.PutElements(map[string]string{
+		"554213" : "Astralis",
+	})
+	assert.Nil(t, err)
+
+	data, _ := buffer.GetBuffer()
+	for now := time.Now(); len(data) == 0; {
+		time.Sleep(time.Millisecond * 200)
+		data, _ = buffer.GetBuffer()
+		if time.Now().Sub(now) > time.Second * 30 {
+			break
+		}
+	}
+	assert.EqualValues(t, 1, len(data))
+	t.Logf("data correctly inserted: [%s]", data)
+
+	// Make sure goroutine cancels in time
+	cancel()
+	if waitTimeout(wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
+}
+
+
+func TestSmartContract_PushDataMultiple(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
+	wg, cancel := buffer.SpawnManagingRoutine()
+
+	err = buffer.PutElements(map[string]string{
+		"554213" : "Astralis",
+		"554253" : "Vitality",
+		"554123" : "Gambit",
+	})
+	assert.Nil(t, err)
+
+	data, _ := buffer.GetBuffer()
+	for now := time.Now(); len(data) == 0; {
+		time.Sleep(time.Millisecond * 200)
+		data, _ = buffer.GetBuffer()
+		if time.Now().Sub(now) > time.Second * 30 {
+			break
+		}
+	}
+	assert.EqualValues(t, 3, len(data))
+	t.Logf("data correctly inserted: [%s]", data)
+
+	// Make sure goroutine cancels in time
+	cancel()
+	if waitTimeout(wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
+}
