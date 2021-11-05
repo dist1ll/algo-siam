@@ -182,3 +182,7 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
+
+func TestSmartContract_DeleteData(t *testing.T) {
+
+}

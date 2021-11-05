@@ -199,6 +199,8 @@ func (ab *AlgorandBuffer) SpawnManagingRoutine() (*sync.WaitGroup, context.Cance
 	return &wg, cancel
 }
 
+// TODO: Consider switching from WG+CancelFunc to representing this
+
 // Manage is a constantly running routine that manages the lifecycle of the
 // AlgorandBuffer. It performs continuous checks against the node, smart
 // contract, application state and funding amount. Manage takes care of
