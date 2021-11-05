@@ -144,7 +144,6 @@ func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approv
 	if err != nil {
 		return 0, err
 	}
-	fmt.Println("create done")
 	// Wait for confirmation
 	_, err = WaitForConfirmation(txID, a, 5)
 	if err != nil {

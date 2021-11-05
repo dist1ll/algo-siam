@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/algorand/go-algorand-sdk/future"
 	"strings"
 	"time"
 
@@ -98,8 +99,25 @@ func FulfillsSchema(app models.Application) bool {
 
 // GenerateApplicationCallTx generates a mostly empty application call transaction, with the
 // given OC type.
-func GenerateApplicationCallTx(a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) types.Transaction {
-	return types.Transaction{}
+func GenerateApplicationCallTx(id uint64, a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) (types.Transaction, error){
+	return future.MakeApplicationCallTx(
+		id,
+		nil,
+		nil,
+		nil,
+		nil,
+		oc,
+		nil,
+		nil,
+		types.StateSchema{},
+		types.StateSchema{},
+		p,
+		a.Address,
+		nil,
+		types.Digest{},
+		[32]byte{},
+		types.Address{},
+		)
 }
 
 func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {

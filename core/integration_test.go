@@ -19,6 +19,11 @@ import (
 // exits with WaitGroups returned by the SpawnManagingRoutine method of
 // AlgorandBuffer
 
+// Test if app removal works
+func TestIntegration_RemoveAccount(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
+}
+
 func TestIntegration_ValidAccount(t *testing.T) {
 	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
@@ -29,11 +34,6 @@ func TestIntegration_ValidAccount(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(info.CreatedApps))
-}
-
-// Test if app removal works
-func TestIntegration_RemoveAccount(t *testing.T) {
-	_ = createBufferAndRemoveApps(t)
 }
 
 // Remove application, and see if Manage re-creates the application
@@ -55,6 +55,7 @@ func TestIntegration_AccountGetsRestored(t *testing.T) {
 
 // Check if smart contract only allows deletion from an creator acc.
 func TestSmartContract_DeleteWrongAcc(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
 	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
@@ -71,6 +72,7 @@ func TestSmartContract_DeleteWrongAcc(t *testing.T) {
 // Checks if client.GenerateApplicationCallTx creates a noop transaction that gets accepted
 // by the smart contract
 func TestSmartContract_GenerateTransaction(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
 	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
@@ -79,7 +81,8 @@ func TestSmartContract_GenerateTransaction(t *testing.T) {
 	assert.Nil(t, err)
 
 	// NoOp Application call from original creator
-	txn := client.GenerateApplicationCallTx(buffer.AccountCrypt, params, types.NoOpOC)
+	txn, err := client.GenerateApplicationCallTx(buffer.AppId, buffer.AccountCrypt, params, types.NoOpOC)
+	assert.Nil(t, err)
 
 	// Execute Transaction
 	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
@@ -91,6 +94,7 @@ func TestSmartContract_GenerateTransaction(t *testing.T) {
 // Test if the smart contract rejects ClearState, CloseOut, OptIn, and
 // Update.
 func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
 	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
@@ -108,12 +112,13 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 
 	// Deny every transaction with the
 	for _, oc := range denyOc {
-		txn := client.GenerateApplicationCallTx(buffer.AccountCrypt, params, oc)
-
+		txn, err := client.GenerateApplicationCallTx(buffer.AppId, buffer.AccountCrypt, params, oc)
+		assert.Nil(t, err)
 		// Execute Transaction
 		ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
 		err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
 		cancel()
+		assert.NotNil(t, err)
 	}
 }
 //func TestIntegration_PushData(t *testing.T) {
