@@ -157,7 +157,7 @@ func WaitForConfirmation(txID string, client AlgorandClient, timeout uint64) (mo
 			return *pt, msg
 		}
 		if pt.ConfirmedRound > 0 {
-			fmt.Printf("Transaction "+txID+" confirmed in round %d\n", pt.ConfirmedRound)
+			fmt.Printf("txn confirmed in round %d\n", pt.ConfirmedRound)
 			return *pt, nil
 		}
 		if pt.PoolError != "" {

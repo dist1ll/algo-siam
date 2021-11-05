@@ -36,7 +36,7 @@ l_arg:
 load 1
 txn NumAppArgs
 >=
-bnz store
+bnz select_option
 
 // get index from scratch space
 load 1
@@ -49,7 +49,36 @@ store 1
 // continue loop
 b l_arg
 
-// All the args are now on the stack
+// At this point, all arguments are written
+// to the stack. We can now decide what to
+// do with those arguments. There are two
+// options: <delete> or <put>
+// Which action we take depends on the msg
+// left in the note field.
+select_option:
+b store
+
+// This is the <delete> option
+delete:
+app_global_del
+// decrement index by 1 instead of 2
+// (because the given args are only keys)
+load 1
+int 1
+-
+store 1
+
+// if index is still > 0, repeat delete
+load 1
+int 0
+>
+bnz delete
+
+// if index is <= 0, finish
+int 1
+return
+
+// This is the <put> option
 store:
 app_global_put
 // decrement index now until all kv pairs
@@ -64,7 +93,7 @@ int 0
 >
 bnz store
 
-// finish
+// If index <= 0, finish
 int 1
 return
 
