@@ -220,7 +220,6 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 	if config == nil {
 		config = GetDefaultManageConfig()
 	}
-
 	// ALL proposed keys to be deleted
 	delArray := make([]string, 0, 1000)
 	// ALL proposed key-value pairs for application
@@ -236,7 +235,6 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 				continue
 			}
 		}
-
 		// If no arguments, wait for arguments (or until a health check
 		// needs to be made)
 		if len(kvArray) == 0 && len(delArray) == 0 {
@@ -251,16 +249,28 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 				continue
 			}
 		}
-
 		// unwrap the rest of the delete args
 		for len(ab.deleteArguments) != 0 && len(delArray) <= client.MaxKVArgs {
 			delArray = append(delArray, <-ab.deleteArguments)
 		}
-
 		// unwrap the rest of the store args
 		for len(ab.storeArguments) != 0 && len(kvArray) <= client.MaxKVArgs {
 			kvArray = append(kvArray, <-ab.storeArguments)
 		}
+
+		// attempt to delete data
+		err = ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
+		if err != nil {
+			fmt.Println(err)
+			select {
+			case <- ctx.Done():
+				return
+			case <- time.After(config.SleepTime):
+				continue
+			}
+		}
+		// if successful, reset delArray
+		delArray = make([]string, 0, 1000)
 
 		// attempt to store data
 		err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
@@ -273,8 +283,7 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 				continue
 			}
 		}
-
-		// if successful, delete kvArray
+		// if successful, reset kvArray
 		kvArray = make([]models.TealKeyValue, 0, 1000)
 	}
 }
