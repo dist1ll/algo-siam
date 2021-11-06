@@ -39,7 +39,7 @@ func TestIntegration_ValidAccount(t *testing.T) {
 // Remove application, and see if Manage re-creates the application
 func TestIntegration_AccountGetsRestored(t *testing.T) {
 	buffer := createBufferAndRemoveApps(t)
-	wg, cancel := buffer.SpawnManagingRoutine()
+	wg, cancel := buffer.SpawnManagingRoutine(nil)
 
 	var info models.Account
 	for !client.ValidAccount(info) {

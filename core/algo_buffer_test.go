@@ -193,10 +193,9 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	c.AddDummyApps(56)
 	assert.False(t, client.ValidAccount(c.Account))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go buffer.Manage(ctx, &ManageConfig{})
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 
-	// Manage() should make account valid in less than a second
+	// Manage routine should make account valid in less than a second
 	now := time.Now()
 	for !client.ValidAccount(c.Account) && time.Now().Sub(now) < time.Second {
 		time.Sleep(time.Millisecond)

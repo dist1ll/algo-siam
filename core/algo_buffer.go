@@ -52,7 +52,7 @@ type ManageConfig struct {
 func GetDefaultManageConfig() *ManageConfig {
 	return &ManageConfig{
 		SleepTime:            client.AlgorandDefaultMinSleep,
-		HealthCheckInterval:  time.Millisecond,
+		HealthCheckInterval:  time.Second,
 		ChannelPollFrequency: time.Microsecond,
 	}
 }
@@ -188,13 +188,13 @@ func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
 // SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage
 // and cancel function to signal termination, and a WaitGroup to wait for the cancellation
 // to be completed.
-func (ab *AlgorandBuffer) SpawnManagingRoutine() (*sync.WaitGroup, context.CancelFunc) {
+func (ab *AlgorandBuffer) SpawnManagingRoutine(cfg *ManageConfig) (*sync.WaitGroup, context.CancelFunc) {
     var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ab.Manage(ctx, &ManageConfig{})
+		ab.Manage(ctx, cfg)
 	}()
 	return &wg, cancel
 }

@@ -36,7 +36,7 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 // then returns the buffer, as well as the WaitGroup and CancelFunc for the
 // managing routine
 func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup, context.CancelFunc, error) {
-	wg, cancel := a.SpawnManagingRoutine()
+	wg, cancel := a.SpawnManagingRoutine(nil)
 	// Manager-routine as an actual struct with functions.
 	err := a.PutElements(m)
 	if err != nil {
