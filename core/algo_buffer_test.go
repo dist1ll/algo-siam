@@ -154,7 +154,7 @@ func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 
 	cancel()
 
-	if waitTimeout(&wg, time.Second) {
+	if waitTimeout(&wg, time.Millisecond * 100) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
@@ -178,7 +178,7 @@ func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 10)
 	cancel()
-	if waitTimeout(&wg, time.Second) {
+	if waitTimeout(&wg, time.Millisecond * 100) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
@@ -193,7 +193,8 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	c.AddDummyApps(56)
 	assert.False(t, client.ValidAccount(c.Account))
 
-	go buffer.Manage(context.Background(), &ManageConfig{})
+	ctx, cancel := context.WithCancel(context.Background())
+	go buffer.Manage(ctx, &ManageConfig{})
 
 	// Manage() should make account valid in less than a second
 	now := time.Now()
@@ -201,6 +202,7 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	assert.True(t, client.ValidAccount(c.Account))
+	cancel()
 }
 
 func TestAlgorandBuffer_GetBuffer(t *testing.T) {
@@ -216,7 +218,8 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
-	go buffer.Manage(context.Background(), &ManageConfig{})
+	ctx, cancel := context.WithCancel(context.Background())
+	go buffer.Manage(ctx, &ManageConfig{})
 
 	// store in buffer
 	values := map[string]string { "2654658" : "Astralis" }
@@ -231,4 +234,9 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	}
 	d, _ = buffer.GetBuffer()
 	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
+	cancel()
+}
+
+func TestAlgorandBuffer_DeleteElements(t *testing.T) {
+
 }
