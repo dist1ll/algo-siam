@@ -218,25 +218,38 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go buffer.Manage(ctx, &ManageConfig{})
-
 	// store in buffer
-	values := map[string]string { "2654658" : "Astralis" }
-	err := buffer.PutElements(values)
-	assert.Nil(t, err)
-	d, _ := buffer.GetBuffer()
-
-	// buffer should be non-zero within a second
-	now := time.Now()
-	for ; len(d) == 0 && time.Now().Sub(now) < time.Second; d, _ = buffer.GetBuffer() {
-		time.Sleep(time.Millisecond)
+	data := map[string]string {
+		"2654658" : "Astralis",
 	}
-	d, _ = buffer.GetBuffer()
+	_, cancel, err := fillBufferWithData(buffer, data)
+	assert.Nil(t, err)
+
+	// confirm buffer size
+	d, err := buffer.GetBuffer()
+	assert.Nil(t, err)
 	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
 	cancel()
 }
 
 func TestAlgorandBuffer_DeleteElements(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
+	// store in buffer
+	data := map[string]string {
+		"1000" : "Astralis",
+		"1001" : "Vitality",
+		"1002" : "Gambit",
+		"1003" : "OG",
+	}
+	_, cancel, err := fillBufferWithData(buffer, data)
+	assert.Nil(t, err)
+
+	err = buffer.DeleteElements("1001")
+	assert.Nil(t, err)
+
+	// We expect 3 items
+	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second))
+	cancel()
 }

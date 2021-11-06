@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"sync"
@@ -55,6 +56,23 @@ func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup
 		return nil, nil, fmt.Errorf("expected %d data points, got %d", len(m), len(data))
 	}
 	return wg, cancel, nil
+}
+
+// bufferLengthWithin returns nil if the given buffer reached a given buffer
+// length within a given time frame. Otherwise returns error. This is a blocking
+// call
+func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
+	now := time.Now()
+	for  time.Now().Sub(now) < t {
+		data, err := a.GetBuffer()
+		if err != nil {
+			return err
+		}
+		if len(data) == l {
+			return nil
+		}
+	}
+	return errors.New("time limit exceeded. buffer doesn't have correct length")
 }
 
 // waitTimeout waits for the sync.WaitGroup until a timeout.
