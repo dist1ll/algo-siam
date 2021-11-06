@@ -57,6 +57,10 @@ type AlgorandClient interface {
 
 	// StoreGlobals stores a given array of TEAL key-value pairs
 	StoreGlobals(crypto.Account, uint64, []models.TealKeyValue) error
+
+	// DeleteGlobals deletes a set of kv pairs from storage. Pass keys as []string
+	// parameter.
+	DeleteGlobals(crypto.Account, uint64, ...string) error
 }
 
 // GeneratePrivateKey64 returns a random, base64-encoded private key.

@@ -190,6 +190,25 @@ func (a *AlgorandMock) CreateApplication(account crypto.Account, approve string,
 	return a.App.Id, nil
 }
 
+func (a *AlgorandMock) DeleteGlobals(acc crypto.Account, appId uint64, keys ...string) error {
+	if a.App.Id != appId {
+		return errors.New("incorrect appId provided")
+	}
+	state := a.App.Params.GlobalState
+	for _, k := range keys {
+		for j, kv := range state {
+			if k == kv.Key {
+				result := make([]models.TealKeyValue, 0)
+				result = append(result, state[:j]...)
+				state = append(result, state[j + 1:]...)
+				break
+			}
+		}
+	}
+	a.App.Params.GlobalState = state
+	return nil
+}
+
 func (a *AlgorandMock) StoreGlobals(acc crypto.Account, appId uint64, kv []models.TealKeyValue) error {
 	if a.App.Id != appId {
 		return errors.New("incorrect appId provided")

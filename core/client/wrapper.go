@@ -159,6 +159,10 @@ func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approv
 	return confirmedTxn.ApplicationIndex, nil
 }
 
+func (a *AlgorandClientWrapper) DeleteGlobals(crypto.Account, uint64, ...string) error {
+	return nil
+}
+
 func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint64, tkv []models.TealKeyValue) error {
 	_, err := a.SuggestedParams(context.Background())
 	if err != nil {
