@@ -184,5 +184,15 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 }
 
 func TestSmartContract_DeleteData(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
+	buffer, wg, cancel := createBufferWithData(t)
 
+	err := buffer.DeleteElements("1001", "1003")
+	assert.Nil(t, err)
+
+	// Make sure goroutine cancels in time
+	cancel()
+	if waitTimeout(wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
 }

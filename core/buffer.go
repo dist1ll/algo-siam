@@ -11,7 +11,7 @@ type Buffer interface {
 	PutElements(kv map[string]string) error
 	// DeleteElements removes given keys from buffer. Does nothing
 	// if key doesn't exist.
-	DeleteElements(keys ...string)
+	DeleteElements(keys ...string) error
 }
 
 type BusyBuffer struct {

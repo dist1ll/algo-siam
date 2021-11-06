@@ -181,8 +181,8 @@ func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
 
 // DeleteElements removes given keys from the buffer. If a key is supplied that
 // doesn't exist, nothing happens.
-func (ab *AlgorandBuffer) DeleteElements(keys ...string) {
-
+func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
+	return nil
 }
 
 // SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage
