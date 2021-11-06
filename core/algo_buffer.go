@@ -30,8 +30,11 @@ type AlgorandBuffer struct {
 	// Client is the wrapping interface for communicating with the node
 	Client client.AlgorandClient
 	// storeArguments is consumed by the Manage goroutine and writes kv pairs
-	// regularly to the blockchain
+	// regularly to the blockchain app storage
 	storeArguments chan models.TealKeyValue
+	// DeleteElements is consumed by the Manage goroutine and deletes given
+	// keys from the blockchain application storage
+	deleteArguments chan string
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
@@ -84,6 +87,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	buffer := &AlgorandBuffer{
 		Client:         c,
 		AccountCrypt:   account,
+		deleteArguments: make(chan string, 64),
 		storeArguments: make(chan models.TealKeyValue, 64),
 		timeoutLength:  client.AlgorandDefaultTimeout,
 	}
@@ -182,6 +186,9 @@ func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
 // DeleteElements removes given keys from the buffer. If a key is supplied that
 // doesn't exist, nothing happens.
 func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
+	for _, k := range keys {
+		ab.deleteArguments <- k
+	}
 	return nil
 }
 
@@ -214,6 +221,8 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		config = GetDefaultManageConfig()
 	}
 
+	// ALL proposed keys to be deleted
+	delArray := make([]string, 0, 1000)
 	// ALL proposed key-value pairs for application
 	kvArray := make([]models.TealKeyValue, 0, 1000)
 
@@ -230,10 +239,12 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 
 		// If no arguments, wait for arguments (or until a health check
 		// needs to be made)
-		if len(kvArray) == 0 {
+		if len(kvArray) == 0 && len(delArray) == 0 {
 			select {
 			case <- ctx.Done():
 				return
+			case del := <- ab.deleteArguments:
+				delArray = append(delArray, del)
 			case kv := <- ab.storeArguments:
 				kvArray = append(kvArray, kv)
 			case <- time.After(config.HealthCheckInterval):
@@ -241,6 +252,10 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 			}
 		}
 
+		// unwrap the rest of the delete args
+		for len(ab.deleteArguments) != 0 && len(delArray) <= client.MaxKVArgs {
+			delArray = append(delArray, <-ab.deleteArguments)
+		}
 
 		// unwrap the rest of the store args
 		for len(ab.storeArguments) != 0 && len(kvArray) <= client.MaxKVArgs {
