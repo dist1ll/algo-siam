@@ -1,11 +1,12 @@
 package core
 
 import (
-    "context"
-    "github.com/stretchr/testify/assert"
-    "sync"
-    "testing"
-    "time"
+	"context"
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"sync"
+	"testing"
+	"time"
 )
 
 // Utility function that creates an AlgorandBuffer, and subsequently deletes the application
@@ -33,33 +34,29 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 // Manage-routine, waits for data to be published to the blockchain, and
 // then returns the buffer, as well as the WaitGroup and CancelFunc for the
 // managing routine
-func createBufferWithData(t *testing.T) (*AlgorandBuffer, *sync.WaitGroup, context.CancelFunc) {
-	buffer, err := CreateAlgorandBufferFromEnv()
-	assert.Nil(t, err)
-	wg, cancel := buffer.SpawnManagingRoutine()
+func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup, context.CancelFunc, error) {
+	wg, cancel := a.SpawnManagingRoutine()
 	// Manager-routine as an actual struct with functions.
-	err = buffer.PutElements(map[string]string{
-		"1000" : "Astralis",
-		"1001" : "Vitality",
-		"1002" : "Gambit",
-		"1003" : "Na'Vi",
-		"1004" : "Furia",
-		"1005" : "G2",
-	})
-	assert.Nil(t, err)
+	err := a.PutElements(m)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// wait for values to be published to buffer
-	data, _ := buffer.GetBuffer()
+	data, _ := a.GetBuffer()
 	for now := time.Now(); len(data) == 0; {
-		time.Sleep(time.Millisecond * 200)
-		data, _ = buffer.GetBuffer()
+		time.Sleep(time.Millisecond * 50)
+		data, _ = a.GetBuffer()
 		if time.Now().Sub(now) > time.Second * 30 {
 			break
 		}
 	}
-	assert.EqualValues(t, 6, len(data))
-	return buffer, wg, cancel
+	if len(data) != len(m) {
+		return nil, nil, fmt.Errorf("expected %d data points, got %d", len(m), len(data))
+	}
+	return wg, cancel, nil
 }
+
 // waitTimeout waits for the sync.WaitGroup until a timeout.
 func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
     c := make(chan struct{})

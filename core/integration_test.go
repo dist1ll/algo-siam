@@ -122,27 +122,18 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 	}
 }
 
+// Push one data point
 func TestSmartContract_PushData(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
 	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
-	wg, cancel := buffer.SpawnManagingRoutine()
 
-	err = buffer.PutElements(map[string]string{
-		"554213" : "Astralis",
-	})
-	assert.Nil(t, err)
-
-	data, _ := buffer.GetBuffer()
-	for now := time.Now(); len(data) == 0; {
-		time.Sleep(time.Millisecond * 200)
-		data, _ = buffer.GetBuffer()
-		if time.Now().Sub(now) > time.Second * 30 {
-			break
-		}
+	// Fill with data
+	data := map[string]string{
+		"1000" : "Astralis",
 	}
-	assert.EqualValues(t, 1, len(data))
-	t.Logf("data correctly inserted: [%s]", data)
+	wg, cancel, err := fillBufferWithData(buffer, data)
+	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
 	cancel()
@@ -151,30 +142,20 @@ func TestSmartContract_PushData(t *testing.T) {
 	}
 }
 
-
+// Push multiple data points
 func TestSmartContract_PushDataMultiple(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
 	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
-	wg, cancel := buffer.SpawnManagingRoutine()
 
-	err = buffer.PutElements(map[string]string{
-		"554213" : "Astralis",
-		"554253" : "Vitality",
-		"554123" : "Gambit",
-	})
-	assert.Nil(t, err)
-
-	data, _ := buffer.GetBuffer()
-	for now := time.Now(); len(data) == 0; {
-		time.Sleep(time.Millisecond * 200)
-		data, _ = buffer.GetBuffer()
-		if time.Now().Sub(now) > time.Second * 30 {
-			break
-		}
+	// Fill with data
+	data := map[string]string{
+		"1000" : "Astralis",
+		"1001" : "Vitality",
+		"1002" : "Gambit",
 	}
-	assert.EqualValues(t, 3, len(data))
-	t.Logf("data correctly inserted: [%s]", data)
+	wg, cancel, err := fillBufferWithData(buffer, data)
+	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
 	cancel()
@@ -183,11 +164,26 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 	}
 }
 
+// Push data and subsequently delete several entries
 func TestSmartContract_DeleteData(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, wg, cancel := createBufferWithData(t)
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
 
-	err := buffer.DeleteElements("1001", "1003")
+	// Fill
+	data := map[string]string {
+		"1000" : "Astralis",
+		"1001" : "Vitality",
+		"1002" : "Gambit",
+		"1003" : "OG",
+		"1004" : "Na'Vi",
+		"1005" : "Furia",
+	}
+	wg, cancel, err := fillBufferWithData(buffer, data)
+	assert.Nil(t, err)
+
+	// Delete
+	err = buffer.DeleteElements("1001", "1003")
 	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
