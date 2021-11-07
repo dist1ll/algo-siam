@@ -225,7 +225,19 @@ func (a *AlgorandMock) StoreGlobals(acc crypto.Account, appId uint64, kv []model
 		kv[i].Key = base64.StdEncoding.EncodeToString([]byte(kv[i].Key))
 		kv[i].Value.Bytes = base64.StdEncoding.EncodeToString([]byte(kv[i].Value.Bytes))
 	}
-	a.App.Params.GlobalState = kv
+
+	// Attempt update
+	state := a.App.Params.GlobalState
+	for j, arg := range kv {
+		for i, elem := range state {
+			if elem.Key == arg.Key {
+				state[i].Value = kv[j].Value
+			}
+		}
+		// if not found, create new
+		state = append(state, arg)
+	}
+	a.App.Params.GlobalState = state
 	a.Account.CreatedApps[0] = a.App
 	return nil
 }
