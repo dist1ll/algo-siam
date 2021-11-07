@@ -43,8 +43,9 @@ type AlgorandClient interface {
 	TealCompile([]byte, context.Context) (models.CompileResponse, error)
 
 	// ExecuteTransaction executes a given transaction, waits for the response,
-	// and returns potential errors.
-	ExecuteTransaction(crypto.Account, types.Transaction, context.Context) error
+	// and returns potential errors. Also returns an info response of the successful
+	// or unsuccessful transaction.
+	ExecuteTransaction(crypto.Account, types.Transaction, context.Context) (models.PendingTransactionInfoResponse, error)
 
 	// DeleteApplication deletes an application with given ID from a given account.
 	// If the account has no apps, or none of its apps have the correct ID, then an

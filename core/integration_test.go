@@ -86,7 +86,7 @@ func TestSmartContract_GenerateTransaction(t *testing.T) {
 
 	// Execute Transaction
 	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
-	err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
+	_, err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
 	cancel()
 	assert.Nil(t, err)
 }
@@ -116,7 +116,7 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 		assert.Nil(t, err)
 		// Execute Transaction
 		ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
-		err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
+		_, err = buffer.Client.ExecuteTransaction(buffer.AccountCrypt, txn, ctx)
 		cancel()
 		assert.NotNil(t, err)
 	}

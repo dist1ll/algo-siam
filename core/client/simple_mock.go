@@ -151,9 +151,9 @@ func (a *AlgorandMock) TealCompile([]byte, context.Context) (models.CompileRespo
 	return ret.(models.CompileResponse), err
 }
 
-func (a *AlgorandMock) ExecuteTransaction(crypto.Account, types.Transaction, context.Context) error {
+func (a *AlgorandMock) ExecuteTransaction(crypto.Account, types.Transaction, context.Context) (models.PendingTransactionInfoResponse, error) {
 	panic("AlgorandStub doesn't stub this method")
-	return nil
+	return models.PendingTransactionInfoResponse{}, nil
 }
 
 func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error {
