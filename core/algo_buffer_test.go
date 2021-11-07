@@ -249,6 +249,12 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	assert.Nil(t, err)
 
 	// We expect 3 items
-	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second))
+	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second * 5))
+
+	// Make sure that key=1001 doesn't exist
+	b, err := buffer.GetBuffer()
+	_, ok := b["1001"]
+	assert.False(t, ok)
+
 	cancel()
 }

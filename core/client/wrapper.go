@@ -159,37 +159,48 @@ func (a *AlgorandClientWrapper) CreateApplication(account crypto.Account, approv
 	return confirmedTxn.ApplicationIndex, nil
 }
 
-func (a *AlgorandClientWrapper) DeleteGlobals(crypto.Account, uint64, ...string) error {
-	return nil
+func (a *AlgorandClientWrapper) DeleteGlobals(acc crypto.Account, appId uint64, args ...string) error {
+	// convert args from []string to [][]byte
+	convArg := make([][]byte, len(args))
+	for i, x := range args {
+		convArg[i] = []byte(x)
+	}
+	return a.postArgumentsToApp(acc, appId, "delete", convArg)
 }
 
-func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint64, tkv []models.TealKeyValue) error {
+func (a *AlgorandClientWrapper) StoreGlobals(acc crypto.Account, appId uint64, tkv []models.TealKeyValue) error {
+	// convert TEAL kv pair to [][]byte arguments
+	args := make([][]byte, len(tkv) * 2)
+	for i, kv := range tkv {
+		args[i * 2] = []byte(kv.Key)
+		args[i * 2 + 1] = []byte(kv.Value.Bytes)
+	}
+	return a.postArgumentsToApp(acc, appId, "put", args)
+}
+
+// postArgumentsToApp creates and publishes a No-Op transaction with given arguments
+// to the application. A note is also added to the transaction. The note determines
+// how the Arguments of the No-Op call get interpreted. You can distill note options
+// from the approval.teal contract.
+func (a *AlgorandClientWrapper) postArgumentsToApp(acc crypto.Account, appId uint64, note string, args [][]byte) error {
 	_, err := a.SuggestedParams(context.Background())
 	if err != nil {
 		return fmt.Errorf("error getting suggested tx params: %s", err)
 	}
-	fmt.Println("attempting to store globals")
 	ctx, cancel := context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
 	params, _ := a.SuggestedParams(ctx)
 	params.FlatFee = true
 	params.Fee = 1000
 	cancel()
 
-	args := make([][]byte, len(tkv) * 2)
-	for i, kv := range tkv {
-		args[i * 2] = []byte(kv.Key)
-		args[i * 2 + 1] = []byte(kv.Value.Bytes)
-	}
-
 	txn, _ := future.MakeApplicationNoOpTx(appId, args,
-		nil, nil, nil, params, account.Address, []byte("put"), types.Digest{}, [32]byte{}, types.Address{})
+		nil, nil, nil, params, acc.Address, []byte(note), types.Digest{}, [32]byte{}, types.Address{})
 
 	// Sign the transaction
-	txID, signedTxn, err := crypto.SignTransaction(account.PrivateKey, txn)
+	txID, signedTxn, err := crypto.SignTransaction(acc.PrivateKey, txn)
 	if err != nil {
 		return nil
 	}
-
 	// Submit the transaction
 	_, err = a.SendRawTransaction(signedTxn, context.Background())
 	if err != nil {
@@ -200,7 +211,6 @@ func (a *AlgorandClientWrapper) StoreGlobals(account crypto.Account, appId uint6
 	if err != nil {
 		return err
 	}
-
 	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
 	_, _, err = a.PendingTransactionInformation(txID, ctx)
 	cancel()

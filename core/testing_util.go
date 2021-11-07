@@ -49,7 +49,7 @@ func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup
 		time.Sleep(time.Millisecond * 50)
 		data, _ = a.GetBuffer()
 		if time.Now().Sub(now) > time.Second * 30 {
-			break
+			return nil, nil, errors.New("timeout while filling buffer")
 		}
 	}
 	if len(data) != len(m) {

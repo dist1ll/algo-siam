@@ -186,6 +186,8 @@ func TestSmartContract_DeleteData(t *testing.T) {
 	err = buffer.DeleteElements("1001", "1003")
 	assert.Nil(t, err)
 
+	assert.Nil(t, bufferLengthWithin(buffer, 4, time.Second * 10))
+
 	// Make sure goroutine cancels in time
 	cancel()
 	if waitTimeout(wg, time.Second) {
