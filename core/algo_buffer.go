@@ -22,19 +22,41 @@ const ApprovalProg = "#pragma version 4\n" +
 	"addr CreatorAddress\n" +
 	"=="
 
+// AlgorandBuffer implements the Buffer interface. The underlying storage mechanism is
+// the Algorand blockchain. To create an AlgorandBuffer you can use the methods
+// CreateAlgorandBuffer or CreateAlgorandBufferFromEnv.
+//
+// In general you'll have to supply a URL that represents the endpoint of an Algorand node,
+// an API token for this node, and a base64 encoded private key of an account that will create
+// and manage the buffer. These variables are provided either as environment variables, or
+// given explicitly by creating an client.AlgorandClient via client.CreateAlgorandClientWrapper.
+//
+// An example of how to instantiate an AlgorandBuffer:
+//   // These are the three important config values
+//   url := "191.162.6.16:1337"
+//   token := "efc54yxeda5o9apret6nermlar2ehn6tsikrh5oea5atnirs56klorki"
+//   privKey := "z2BGxfLJ...1IWsvNKRFw8bLQUnK2nRa+YmLNvQCA=="
+//
+//   client, err := client.CreateAlgorandClientWrapper(url, token)
+//   buffer, err := CreateAlgorandBuffer(client, privKey)
 type AlgorandBuffer struct {
 	// AppId is the ID of Algorand application this buffer publishes to.
 	AppId uint64
+
 	// AccountCrypt is the owner of the buffer's Algorand application.
 	AccountCrypt crypto.Account
+
 	// Client is the wrapping interface for communicating with the node
 	Client client.AlgorandClient
+
 	// storeArguments is consumed by the Manage goroutine and writes kv pairs
 	// regularly to the blockchain app storage
 	storeArguments chan models.TealKeyValue
+
 	// DeleteElements is consumed by the Manage goroutine and deletes given
 	// keys from the blockchain application storage
 	deleteArguments chan string
+
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
@@ -60,8 +82,13 @@ func GetDefaultManageConfig() *ManageConfig {
 	}
 }
 
-// CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment
-// variables. See README.md for more information.
+// CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment variables.
+// The environment variables contain configuration to connect to an Algorand node.
+// You can find explanations in the README. Alternatively, check out the implementation
+// in client.GetAlgorandEnvironmentVars.
+//
+// This method uses the client.CreateAlgorandClientWrapper implementation. If you want to
+// use your own implementation of client.AlgorandClient, use CreateAlgorandBuffer instead.
 func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	url, token, base64key := client.GetAlgorandEnvironmentVars()
 	a, err := client.CreateAlgorandClientWrapper(url, token)
@@ -71,7 +98,10 @@ func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	return CreateAlgorandBuffer(a, base64key)
 }
 
-// CreateAlgorandBuffer creates a new instance of AlgorandBuffer. base64key is the
+// CreateAlgorandBuffer creates a new instance of AlgorandBuffer. The buffer requires an
+// client.AlgorandClient to perform persistence and setup operations on the Algorand blockchain.
+// base64key is the base64-encoded private key of the 'target account'. The target account
+// creates and maintains the applications state on the blockchain.
 func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(base64key)

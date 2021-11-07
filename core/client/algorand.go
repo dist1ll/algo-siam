@@ -76,12 +76,16 @@ func ValidAccount(account models.Account) bool {
 	return len(account.CreatedApps) == 1 && FulfillsSchema(account.CreatedApps[0])
 }
 
+// GenerateSchemas generates application state schemas for the Algorand oracle application.
+// It returns an object of type types.StateSchema.
 func GenerateSchemas() (types.StateSchema, types.StateSchema) {
 	globalSchema := types.StateSchema{NumUint: uint64(globalInts), NumByteSlice: uint64(globalBytes)}
 	localSchema := types.StateSchema{NumUint: uint64(localInts), NumByteSlice: uint64(localBytes)}
 	return localSchema, globalSchema
 }
 
+// GenerateSchemasModel generates application state schemas for the Algorand oracle
+// application. It returns an object of type models.ApplicationStateSchema.
 func GenerateSchemasModel() (models.ApplicationStateSchema, models.ApplicationStateSchema) {
 	g, l := GenerateSchemas()
 	globalSchema := models.ApplicationStateSchema{NumUint: g.NumUint, NumByteSlice: g.NumByteSlice}
@@ -89,6 +93,8 @@ func GenerateSchemasModel() (models.ApplicationStateSchema, models.ApplicationSt
 	return localSchema, globalSchema
 }
 
+// FulfillsSchema returns true if the given application has correct global state schemas.
+// You can get the correct schemas from the functions GenerateSchemas and GenerateSchemasModel.
 func FulfillsSchema(app models.Application) bool {
 	if app.Id == 0 {
 		return false
@@ -174,6 +180,6 @@ func WaitForConfirmation(txID string, client AlgorandClient, timeout uint64) (mo
 		status, err = client.StatusAfterBlock(currentRound, context.Background())
 		currentRound++
 	}
-	msg := errors.New("Tx not found in round range")
+	msg := errors.New("tx not found in round range")
 	return *pt, msg
 }
