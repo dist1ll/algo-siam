@@ -132,7 +132,8 @@ func TestSmartContract_PushData(t *testing.T) {
 	data := map[string]string{
 		"1000" : "Astralis",
 	}
-	wg, cancel, err := fillBufferWithData(buffer, data)
+	wg, cancel := buffer.SpawnManagingRoutine(nil)
+	err = putElementsAndWait(buffer, data, time.Second * 30)
 	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
@@ -154,7 +155,8 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 		"1001" : "Vitality",
 		"1002" : "Gambit",
 	}
-	wg, cancel, err := fillBufferWithData(buffer, data)
+	wg, cancel := buffer.SpawnManagingRoutine(nil)
+	err = putElementsAndWait(buffer, data, time.Second * 30)
 	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
@@ -179,7 +181,8 @@ func TestSmartContract_DeleteData(t *testing.T) {
 		"1004" : "Na'Vi",
 		"1005" : "Furia",
 	}
-	wg, cancel, err := fillBufferWithData(buffer, data)
+	wg, cancel := buffer.SpawnManagingRoutine(nil)
+	err = putElementsAndWait(buffer, data, time.Second * 30)
 	assert.Nil(t, err)
 
 	// Delete
@@ -206,7 +209,8 @@ func TestSmartContract_UpdateData(t *testing.T) {
 		"1001" : "Vitality",
 		"1002" : "Gambit",
 	}
-	wg, cancel, err := fillBufferWithData(buffer, data)
+	wg, cancel := buffer.SpawnManagingRoutine(nil)
+	err = putElementsAndWait(buffer, data, time.Second * 30)
 	assert.Nil(t, err)
 
 	// Modify and insert data

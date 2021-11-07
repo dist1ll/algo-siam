@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"reflect"
 	"runtime"
@@ -195,9 +197,13 @@ func (a *AlgorandMock) DeleteGlobals(acc crypto.Account, appId uint64, keys ...s
 		return errors.New("incorrect appId provided")
 	}
 	state := a.App.Params.GlobalState
+	for i, _ := range keys {
+		keys[i] = base64.StdEncoding.EncodeToString([]byte(keys[i]))
+	}
 	for _, k := range keys {
 		for j, kv := range state {
 			if k == kv.Key {
+				fmt.Println("deleting!!")
 				result := make([]models.TealKeyValue, 0)
 				result = append(result, state[:j]...)
 				state = append(result, state[j + 1:]...)
@@ -206,12 +212,18 @@ func (a *AlgorandMock) DeleteGlobals(acc crypto.Account, appId uint64, keys ...s
 		}
 	}
 	a.App.Params.GlobalState = state
+	a.Account.CreatedApps[0] = a.App
 	return nil
 }
 
 func (a *AlgorandMock) StoreGlobals(acc crypto.Account, appId uint64, kv []models.TealKeyValue) error {
 	if a.App.Id != appId {
 		return errors.New("incorrect appId provided")
+	}
+	// Encode with base64 like reference implementation of Algorand sdk
+	for i, _ := range kv {
+		kv[i].Key = base64.StdEncoding.EncodeToString([]byte(kv[i].Key))
+		kv[i].Value.Bytes = base64.StdEncoding.EncodeToString([]byte(kv[i].Value.Bytes))
 	}
 	a.App.Params.GlobalState = kv
 	a.Account.CreatedApps[0] = a.App

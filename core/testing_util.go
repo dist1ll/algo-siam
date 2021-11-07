@@ -31,23 +31,18 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 	return buffer
 }
 
-// fillBufferWithData fills an empty(!) AlgorandBuffer with data. It spawns a
-// Manage-routine, waits for data to be published to the blockchain, and
-// then returns the WaitGroup and CancelFunc for the managing routine
-func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup, context.CancelFunc, error) {
-	wg, cancel := a.SpawnManagingRoutine(nil)
-	// Manager-routine as an actual struct with functions.
+// putElementsAndWait fills a buffer with data and waits for the data to be written
+// to the AlgorandBuffer, until a given timeout t. This is a blocking call.
+func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration) error {
 	err := a.PutElements(m)
 	if err != nil {
-		cancel()
-		return nil, nil, err
+		return err
 	}
-	err = bufferLengthWithin(a, len(m), time.Second * 30)
+	err = bufferLengthWithin(a, len(m), t)
 	if err != nil {
-		cancel()
-		return nil, nil, err
+		return err
 	}
-	return wg, cancel, nil
+	return nil
 }
 
 // bufferLengthWithin returns nil if the given buffer reached a given buffer

@@ -4,6 +4,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -221,7 +222,8 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	data := map[string]string {
 		"2654658" : "Astralis",
 	}
-	_, cancel, err := fillBufferWithData(buffer, data)
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 
 	// confirm buffer size
@@ -242,12 +244,14 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 		"1002" : "Gambit",
 		"1003" : "OG",
 	}
-	_, cancel, err := fillBufferWithData(buffer, data)
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 
 	err = buffer.DeleteElements("1001")
 	assert.Nil(t, err)
-
+	d, _ := buffer.GetBuffer()
+	fmt.Println(len(d))
 	// We expect 3 items
 	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second * 5))
 
