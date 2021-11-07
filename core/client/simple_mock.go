@@ -229,13 +229,17 @@ func (a *AlgorandMock) StoreGlobals(acc crypto.Account, appId uint64, kv []model
 	// Attempt update
 	state := a.App.Params.GlobalState
 	for j, arg := range kv {
+		noneFound := true
 		for i, elem := range state {
 			if elem.Key == arg.Key {
-				state[i].Value = kv[j].Value
+				state[i].Value.Bytes = kv[j].Value.Bytes
+				noneFound = false
 			}
 		}
-		// if not found, create new
-		state = append(state, arg)
+		// if no key exists, create new (as long as space is there)
+		if noneFound && len(state) < globalBytes {
+			state = append(state, arg)
+		}
 	}
 	a.App.Params.GlobalState = state
 	a.Account.CreatedApps[0] = a.App

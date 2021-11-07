@@ -88,7 +88,7 @@ func GenerateSchemas() (types.StateSchema, types.StateSchema) {
 // GenerateSchemasModel generates application state schemas for the Algorand oracle
 // application. It returns an object of type models.ApplicationStateSchema.
 func GenerateSchemasModel() (models.ApplicationStateSchema, models.ApplicationStateSchema) {
-	g, l := GenerateSchemas()
+	l, g := GenerateSchemas()
 	globalSchema := models.ApplicationStateSchema{NumUint: g.NumUint, NumByteSlice: g.NumByteSlice}
 	localSchema := models.ApplicationStateSchema{NumUint: l.NumUint, NumByteSlice: l.NumByteSlice}
 	return localSchema, globalSchema
