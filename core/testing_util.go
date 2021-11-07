@@ -39,20 +39,13 @@ func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup
 	// Manager-routine as an actual struct with functions.
 	err := a.PutElements(m)
 	if err != nil {
+		cancel()
 		return nil, nil, err
 	}
-
-	// wait for values to be published to buffer
-	data, _ := a.GetBuffer()
-	for now := time.Now(); len(data) == 0; {
-		time.Sleep(time.Millisecond * 50)
-		data, _ = a.GetBuffer()
-		if time.Now().Sub(now) > time.Second * 30 {
-			return nil, nil, errors.New("timeout while filling buffer")
-		}
-	}
-	if len(data) != len(m) {
-		return nil, nil, fmt.Errorf("expected %d data points, got %d", len(m), len(data))
+	err = bufferLengthWithin(a, len(m), time.Second * 30)
+	if err != nil {
+		cancel()
+		return nil, nil, err
 	}
 	return wg, cancel, nil
 }
@@ -63,6 +56,7 @@ func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup
 func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 	now := time.Now()
 	for  time.Now().Sub(now) < t {
+		time.Sleep(time.Millisecond * 50)
 		data, err := a.GetBuffer()
 		if err != nil {
 			return err
@@ -74,6 +68,8 @@ func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 	return errors.New("time limit exceeded. buffer doesn't have correct length")
 }
 
+// bufferEqualsWithin returns nil if the 'buffer[key] = expected' within a given duration.
+// Use this to check if a value got correctly inserted or updated into the AlgorandBuffer.
 func bufferEqualsWithin(a *AlgorandBuffer, key string, expected string, t time.Duration) error {
 	now := time.Now()
 	data, err := a.GetBuffer()
