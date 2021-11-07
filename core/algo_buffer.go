@@ -199,7 +199,9 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 
 	m := make(map[string]string)
 	for _, kv := range app.Params.GlobalState {
-		m[kv.Key] = kv.Value.Bytes
+		decodedKey, _ := base64.StdEncoding.DecodeString(kv.Key)
+		decodedVal, _ := base64.StdEncoding.DecodeString(kv.Value.Bytes)
+		m[string(decodedKey)] = string(decodedVal)
 	}
 	return m, nil
 }
@@ -280,11 +282,11 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 			}
 		}
 		// unwrap the rest of the delete args
-		for len(ab.deleteArguments) != 0 && len(delArray) <= client.MaxKVArgs {
+		for len(ab.deleteArguments) != 0 && len(delArray) < client.MaxArgs {
 			delArray = append(delArray, <-ab.deleteArguments)
 		}
 		// unwrap the rest of the store args
-		for len(ab.storeArguments) != 0 && len(kvArray) <= client.MaxKVArgs {
+		for len(ab.storeArguments) != 0 && len(kvArray) < client.MaxKVArgs {
 			kvArray = append(kvArray, <-ab.storeArguments)
 		}
 

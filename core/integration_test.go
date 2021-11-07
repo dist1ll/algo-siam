@@ -194,3 +194,32 @@ func TestSmartContract_DeleteData(t *testing.T) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
+
+func TestSmartContract_UpdateData(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
+
+	// Fill
+	data := map[string]string {
+		"1000" : "Astralis",
+		"1001" : "Vitality",
+		"1002" : "Gambit",
+	}
+	wg, cancel, err := fillBufferWithData(buffer, data)
+	assert.Nil(t, err)
+
+	// Modify and insert data
+	data["1000"] = "G2"
+	err = buffer.PutElements(data)
+	assert.Nil(t, err)
+
+	// Check if value was updated (until timeout)
+	assert.Nil(t, bufferEqualsWithin(buffer, "1000", "G2", time.Second * 2))
+
+	// Make sure goroutine cancels in time
+	cancel()
+	if waitTimeout(wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
+}

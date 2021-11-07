@@ -31,10 +31,9 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 	return buffer
 }
 
-// createBufferWithData creates an AlgorandBuffer, inserts data with a
+// fillBufferWithData fills an empty(!) AlgorandBuffer with data. It spawns a
 // Manage-routine, waits for data to be published to the blockchain, and
-// then returns the buffer, as well as the WaitGroup and CancelFunc for the
-// managing routine
+// then returns the WaitGroup and CancelFunc for the managing routine
 func fillBufferWithData(a *AlgorandBuffer, m map[string]string) (*sync.WaitGroup, context.CancelFunc, error) {
 	wg, cancel := a.SpawnManagingRoutine(nil)
 	// Manager-routine as an actual struct with functions.
@@ -73,6 +72,23 @@ func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 		}
 	}
 	return errors.New("time limit exceeded. buffer doesn't have correct length")
+}
+
+func bufferEqualsWithin(a *AlgorandBuffer, key string, expected string, t time.Duration) error {
+	now := time.Now()
+	data, err := a.GetBuffer()
+	for  time.Now().Sub(now) < t {
+		data, err = a.GetBuffer()
+		if err != nil {
+			return err
+		}
+		if _, ok := data[key]; !ok {
+			continue
+		} else if data[key] == expected {
+			return nil
+		}
+	}
+	return fmt.Errorf("time limit exceeded. buffer['%s']='%s', but expected '%s'", key, data[key], expected)
 }
 
 // waitTimeout waits for the sync.WaitGroup until a timeout.

@@ -23,7 +23,8 @@ const globalInts = 0
 const globalBytes = 64
 
 // Arguments
-const MaxKVArgs = 15
+const MaxArgs = 16
+const MaxKVArgs = 8
 
 const AlgorandDefaultTimeout time.Duration = time.Second * 30
 const AlgorandDefaultMinSleep time.Duration = time.Second * 5
