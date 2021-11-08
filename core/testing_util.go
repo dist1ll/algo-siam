@@ -30,7 +30,7 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 	return buffer
 }
 
-// putElementsAndWait fills a buffer with data and waits for the data to be written
+// putElementsAndWait fills an empty(!) buffer with data and waits for the data to be written
 // to the AlgorandBuffer, until a given timeout t. This is a blocking call.
 func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration) error {
 	err := a.PutElements(m)

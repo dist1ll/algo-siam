@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/types"
+	"strconv"
 	"testing"
 	"time"
 
@@ -220,6 +221,41 @@ func TestSmartContract_UpdateData(t *testing.T) {
 
 	// Check if value was updated (until timeout)
 	assert.Nil(t, bufferEqualsWithin(buffer, "1000", "G2", time.Second * 2))
+
+	// Make sure goroutine cancels in time
+	cancel()
+	if waitTimeout(wg, time.Second) {
+		t.Fatalf("goroutine didn't finish in time")
+	}
+}
+
+func TestSmartContract_PutManyData(t *testing.T) {
+	_ = createBufferAndRemoveApps(t)
+	buffer, err := CreateAlgorandBufferFromEnv()
+	assert.Nil(t, err)
+
+	// Fill
+	data := make(map[string]string, 64)
+	for i := 0; i < 64; i++ {
+		data[strconv.Itoa(i)] = "Winner"
+	}
+	wg, cancel := buffer.SpawnManagingRoutine(nil)
+	err = putElementsAndWait(buffer, data, time.Second * 30)
+	assert.Nil(t, err)
+
+	d, err := buffer.GetBuffer()
+	assert.Nil(t, err)
+	for key, val := range d {
+		assert.Equal(t, data[key], val)
+	}
+
+	// Replace All
+	data = make(map[string]string, 32)
+	for i := 0; i < 32; i++ {
+		data[strconv.Itoa(i)] = "Loser"
+	}
+	err = putElementsAndWait(buffer, data, time.Second * 30)
+	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
 	cancel()
