@@ -72,7 +72,7 @@ func (a *AlgorandMock) AddDummyApps(ids ...uint64) {
 		return
 	}
 
-	glob, loc := GenerateSchemasModel()
+	loc, glob := GenerateSchemasModel()
 	for _, val := range ids {
 		params := models.ApplicationParams{GlobalStateSchema: glob, LocalStateSchema: loc}
 		a.Account.CreatedApps = append(a.Account.CreatedApps, models.Application{Id: val, Params: params})
@@ -83,7 +83,7 @@ func (a *AlgorandMock) AddDummyApps(ids ...uint64) {
 // AEMA schema. Note: existing applications are completely overridden.
 func (a *AlgorandMock) CreateDummyApps(ids ...uint64) {
 	a.Account.CreatedApps = make([]models.Application, len(ids))
-	glob, loc := GenerateSchemasModel()
+	loc, glob := GenerateSchemasModel()
 	for i, val := range ids {
 		params := models.ApplicationParams{GlobalStateSchema: glob, LocalStateSchema: loc}
 		a.Account.CreatedApps[i] = models.Application{Id: val, Params: params}
@@ -179,10 +179,9 @@ func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error
 }
 
 func (a *AlgorandMock) CreateApplication(account crypto.Account, approve string, clear string) (uint64, error) {
-	g, l := GenerateSchemasModel()
+	l, g := GenerateSchemasModel()
 	params := models.ApplicationParams{GlobalStateSchema: g, LocalStateSchema: l}
 	app := models.Application{Id: 4512, Params: params}
-
 	ret, err := a.wrapExecutionCondition(app, models.Application{}, (*AlgorandMock).CreateApplication)
 	if err != nil {
 		return 0, err

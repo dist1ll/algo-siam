@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"sync"
@@ -60,7 +59,7 @@ func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 			return nil
 		}
 	}
-	return errors.New("time limit exceeded. buffer doesn't have correct length")
+	return fmt.Errorf("time limit exceeded. buffer length expected %d", l)
 }
 
 // bufferEqualsWithin returns nil if the 'buffer[key] = expected' within a given duration.

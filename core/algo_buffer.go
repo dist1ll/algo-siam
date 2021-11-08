@@ -258,6 +258,7 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 	kvArray := make([]models.TealKeyValue, 0, 1000)
 
 	for ctx.Err() == nil {
+
 		err := ab.ensureRemoteValid(ctx)
 		if err != nil {
 			select {
@@ -281,42 +282,47 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 				continue
 			}
 		}
+
 		// unwrap the rest of the delete args
-		for len(ab.deleteArguments) != 0 && len(delArray) < client.MaxArgs {
+		for len(ab.deleteArguments) > 0 && len(delArray) < client.MaxArgs {
 			delArray = append(delArray, <-ab.deleteArguments)
 		}
 		// unwrap the rest of the store args
-		for len(ab.storeArguments) != 0 && len(kvArray) < client.MaxKVArgs {
+		for len(ab.storeArguments) > 0 && len(kvArray) < client.MaxKVArgs {
 			kvArray = append(kvArray, <-ab.storeArguments)
 		}
 
 		// attempt to delete data
-		err = ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
-		if err != nil {
-			fmt.Println(err)
-			select {
-			case <- ctx.Done():
-				return
-			case <- time.After(config.SleepTime):
-				continue
+		if len(delArray) > 0 {
+			err = ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
+			if err != nil {
+				fmt.Println(err)
+				select {
+				case <- ctx.Done():
+					return
+				case <- time.After(config.SleepTime):
+					continue
+				}
 			}
+			// if successful, reset delArray
+			delArray = make([]string, 0, 1000)
 		}
-		// if successful, reset delArray
-		delArray = make([]string, 0, 1000)
 
 		// attempt to store data
-		err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
-		if err != nil {
-			fmt.Println(err)
-			select {
-			case <- ctx.Done():
-				return
-			case <- time.After(config.SleepTime):
-				continue
+		if len(kvArray) > 0 {
+			err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
+			if err != nil {
+				fmt.Println(err)
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(config.SleepTime):
+					continue
+				}
 			}
+			// if successful, reset kvArray
+			kvArray = make([]models.TealKeyValue, 0, 1000)
 		}
-		// if successful, reset kvArray
-		kvArray = make([]models.TealKeyValue, 0, 1000)
 	}
 }
 
