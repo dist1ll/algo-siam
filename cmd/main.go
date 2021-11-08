@@ -15,4 +15,6 @@ func main() {
 	}
 	_, _ = hltv.GetFutureMatches()
 	_, _ = hltv.GetPastMatches()
+
+
 }

@@ -1,4 +1,4 @@
-package core
+package mao
 
 // The AEMA buffer is the primary persistence interface to store match data.
 // The buffer can be implemented as local storage, cloud storage or on a blockchain.

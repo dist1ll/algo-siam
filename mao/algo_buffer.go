@@ -1,4 +1,4 @@
-package core
+package mao
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 
-	"github.com/m2q/aema/core/client"
+	"github.com/m2q/aema/mao/client"
 
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
