@@ -3,10 +3,11 @@ package core
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Utility function that creates an AlgorandBuffer, and subsequently deletes the application
@@ -30,18 +31,53 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 	return buffer
 }
 
-// putElementsAndWait fills an empty(!) buffer with data and waits for the data to be written
+// putElementsAndWait fills a buffer with data and waits for the data to be written
 // to the AlgorandBuffer, until a given timeout t. This is a blocking call.
 func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration) error {
 	err := a.PutElements(m)
 	if err != nil {
 		return err
 	}
-	err = bufferLengthWithin(a, len(m), t)
+	err = bufferDataInsertedWithin(a, m, t)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// mapContainsMap returns true if every element of a map 'sub' is contained in
+// a map 'super'
+func mapContainsMap(super map[string]string, sub map[string]string) bool {
+	if len(super) < len(sub) {
+		return false
+	}
+	for key, subVal := range sub {
+		if superVal, ok := super[key]; ok {
+			if superVal != subVal {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+// bufferDataInsertedWithin returns nil if the given data 'm' is inserted into the buffer
+// within a given time frame.
+func bufferDataInsertedWithin(a *AlgorandBuffer, m map[string]string, t time.Duration) error {
+	now := time.Now()
+	for time.Now().Sub(now) < t {
+		time.Sleep(time.Millisecond * 50)
+		data, err := a.GetBuffer()
+		if err != nil {
+			return err
+		}
+		if mapContainsMap(data, m) {
+			return nil
+		}
+	}
+	return fmt.Errorf("time limit exceeded. buffer data mismatch")
 }
 
 // bufferLengthWithin returns nil if the given buffer reached a given buffer
@@ -49,7 +85,7 @@ func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration)
 // call
 func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 	now := time.Now()
-	for  time.Now().Sub(now) < t {
+	for time.Now().Sub(now) < t {
 		time.Sleep(time.Millisecond * 50)
 		data, err := a.GetBuffer()
 		if err != nil {
@@ -67,7 +103,7 @@ func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 func bufferEqualsWithin(a *AlgorandBuffer, key string, expected string, t time.Duration) error {
 	now := time.Now()
 	data, err := a.GetBuffer()
-	for  time.Now().Sub(now) < t {
+	for time.Now().Sub(now) < t {
 		data, err = a.GetBuffer()
 		if err != nil {
 			return err
@@ -83,15 +119,15 @@ func bufferEqualsWithin(a *AlgorandBuffer, key string, expected string, t time.D
 
 // waitTimeout waits for the sync.WaitGroup until a timeout.
 func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
-    c := make(chan struct{})
-    go func() {
-        defer close(c)
-        wg.Wait()
-    }()
-    select {
-    case <-c:
-        return false // completed normally
-    case <-time.After(timeout):
-        return true // timed out
-    }
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return false // completed normally
+	case <-time.After(timeout):
+		return true // timed out
+	}
 }
