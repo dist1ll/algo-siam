@@ -1,4 +1,6 @@
 # Siam - Oracle as Global Application State
+[![Go Report Card](https://goreportcard.com/badge/github.com/m2q/algo-siam)](https://goreportcard.com/report/github.com/m2q/algo-siam)
+[![License: Zlib](https://img.shields.io/badge/License-Zlib-blue.svg)](https://opensource.org/licenses/Zlib)
 
 Siam provides an easy interface for maintaining a small key-value store on the Algorand blockchain. 
 You can use it to provide Oracle data for Algorand applications. Siam stores data into the 
