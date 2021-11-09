@@ -1,4 +1,4 @@
-# Algorand Esports Match Aggregator (AEMA) 
+# Oracle as Application State (OAS) 
 
 This project contains the source for an oracle on the Algorand blockchain that provides recent esports match results. It is licensed under the permissive zlib license. 
 
