@@ -1,6 +1,6 @@
 // +build integration
 
-package mao
+package siam
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
-	"github.com/m2q/aema/mao/client"
+	"github.com/m2q/algo-siam/mao/client"
 	"github.com/stretchr/testify/assert"
 )
 

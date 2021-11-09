@@ -1,6 +1,6 @@
-package mao
+package siam
 
-// The AEMA buffer is the primary persistence interface to store match data.
+// Buffer is the primary persistence interface to store match data.
 // The buffer can be implemented as local storage, cloud storage or on a blockchain.
 type Buffer interface {
 	// GetBuffer can return an error if the buffer is busy writing
@@ -22,7 +22,7 @@ func (e *BusyBuffer) Error() string {
 	return "buffer is busy: " + e.msg
 }
 
-// Implements an AEMA buffer as local, in-memory storage
+// StorageBuffer implements an AEMA buffer as local, in-memory storage
 type StorageBuffer struct {
 	Buffer map[string]string
 }

@@ -1,4 +1,4 @@
-package mao
+package siam
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 
-	"github.com/m2q/aema/mao/client"
+	"github.com/m2q/algo-siam/client"
 
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
