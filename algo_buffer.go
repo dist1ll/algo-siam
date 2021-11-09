@@ -115,11 +115,11 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	}
 
 	buffer := &AlgorandBuffer{
-		Client:         c,
-		AccountCrypt:   account,
+		Client:          c,
+		AccountCrypt:    account,
 		deleteArguments: make(chan string, 64),
-		storeArguments: make(chan models.TealKeyValue, 64),
-		timeoutLength:  client.AlgorandDefaultTimeout,
+		storeArguments:  make(chan models.TealKeyValue, 64),
+		timeoutLength:   client.AlgorandDefaultTimeout,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
@@ -228,7 +228,7 @@ func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
 // and cancel function to signal termination, and a WaitGroup to wait for the cancellation
 // to be completed.
 func (ab *AlgorandBuffer) SpawnManagingRoutine(cfg *ManageConfig) (*sync.WaitGroup, context.CancelFunc) {
-    var wg sync.WaitGroup
+	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	wg.Add(1)
 	go func() {
@@ -272,13 +272,13 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		// needs to be made)
 		if len(kvArray) == 0 && len(delArray) == 0 {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return
-			case del := <- ab.deleteArguments:
+			case del := <-ab.deleteArguments:
 				delArray = append(delArray, del)
-			case kv := <- ab.storeArguments:
+			case kv := <-ab.storeArguments:
 				kvArray = append(kvArray, kv)
-			case <- time.After(config.HealthCheckInterval):
+			case <-time.After(config.HealthCheckInterval):
 				continue
 			}
 		}
@@ -298,9 +298,9 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 			if err != nil {
 				fmt.Println(err)
 				select {
-				case <- ctx.Done():
+				case <-ctx.Done():
 					return
-				case <- time.After(config.SleepTime):
+				case <-time.After(config.SleepTime):
 					continue
 				}
 			}

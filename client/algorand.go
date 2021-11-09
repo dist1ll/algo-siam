@@ -15,7 +15,6 @@ import (
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
 
-
 // Schema of AlgorandBuffer.
 const localInts = 0
 const localBytes = 0
@@ -111,7 +110,7 @@ func FulfillsSchema(app models.Application) bool {
 
 // GenerateApplicationCallTx generates a mostly empty application call transaction, with the
 // given OC type.
-func GenerateApplicationCallTx(id uint64, a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) (types.Transaction, error){
+func GenerateApplicationCallTx(id uint64, a crypto.Account, p types.SuggestedParams, oc types.OnCompletion) (types.Transaction, error) {
 	return future.MakeApplicationCallTx(
 		id,
 		nil,
@@ -129,7 +128,7 @@ func GenerateApplicationCallTx(id uint64, a crypto.Account, p types.SuggestedPar
 		types.Digest{},
 		[32]byte{},
 		types.Address{},
-		)
+	)
 }
 
 func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []byte) {

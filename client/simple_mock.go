@@ -27,7 +27,6 @@ type AlgorandMock struct {
 	SignedTXN         types.SignedTxn
 	CompileResponse   models.CompileResponse
 	ErrorFunctions    map[string]bool
-
 }
 
 // wrapExecutionCondition wraps the execution of an AlgorandMock function and
@@ -97,6 +96,7 @@ func (a *AlgorandMock) CreateDummyAppsWithSchema(s models.ApplicationStateSchema
 		a.Account.CreatedApps[i].Params = models.ApplicationParams{GlobalStateSchema: s, LocalStateSchema: s}
 	}
 }
+
 // ClearFunctionErrors resets the error function map to its default.
 func (a *AlgorandMock) ClearFunctionErrors() {
 	a.ErrorFunctions = make(map[string]bool)
@@ -171,7 +171,7 @@ func (a *AlgorandMock) DeleteApplication(acc crypto.Account, appId uint64) error
 		if app.Id == appId {
 			result := make([]models.Application, 0)
 			result = append(result, a.Account.CreatedApps[:idx]...)
-			a.Account.CreatedApps = append(result, a.Account.CreatedApps[idx + 1:]...)
+			a.Account.CreatedApps = append(result, a.Account.CreatedApps[idx+1:]...)
 			return nil
 		}
 	}
@@ -205,7 +205,7 @@ func (a *AlgorandMock) DeleteGlobals(acc crypto.Account, appId uint64, keys ...s
 				fmt.Println("deleting!!")
 				result := make([]models.TealKeyValue, 0)
 				result = append(result, state[:j]...)
-				state = append(result, state[j + 1:]...)
+				state = append(result, state[j+1:]...)
 				break
 			}
 		}

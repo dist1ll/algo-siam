@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package siam
@@ -155,7 +156,7 @@ func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 
 	cancel()
 
-	if waitTimeout(&wg, time.Millisecond * 100) {
+	if waitTimeout(&wg, time.Millisecond*100) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
@@ -173,13 +174,13 @@ func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		buffer.Manage(ctx, &ManageConfig{
-			SleepTime: time.Minute,
+			SleepTime:           time.Minute,
 			HealthCheckInterval: time.Minute})
 	}()
 
 	time.Sleep(time.Millisecond * 10)
 	cancel()
-	if waitTimeout(&wg, time.Millisecond * 100) {
+	if waitTimeout(&wg, time.Millisecond*100) {
 		t.Fatalf("goroutine didn't finish in time")
 	}
 }
@@ -219,8 +220,8 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
 	// store in buffer
-	data := map[string]string {
-		"2654658" : "Astralis",
+	data := map[string]string{
+		"2654658": "Astralis",
 	}
 	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
@@ -238,11 +239,11 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
 	// store in buffer
-	data := map[string]string {
-		"1000" : "Astralis",
-		"1001" : "Vitality",
-		"1002" : "Gambit",
-		"1003" : "OG",
+	data := map[string]string{
+		"1000": "Astralis",
+		"1001": "Vitality",
+		"1002": "Gambit",
+		"1003": "OG",
 	}
 	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
@@ -253,7 +254,7 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	d, _ := buffer.GetBuffer()
 	fmt.Println(len(d))
 	// We expect 3 items
-	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second * 5))
+	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second*5))
 
 	// Make sure that key=1001 doesn't exist
 	b, err := buffer.GetBuffer()

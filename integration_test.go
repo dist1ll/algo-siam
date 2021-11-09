@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package siam
@@ -100,7 +101,7 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 	assert.Nil(t, err)
 
 	// OnCompletion Teal ops that should be rejected
-	denyOc := []types.OnCompletion {
+	denyOc := []types.OnCompletion{
 		types.ClearStateOC,
 		types.OptInOC,
 		types.CloseOutOC,
@@ -131,10 +132,10 @@ func TestSmartContract_PushData(t *testing.T) {
 
 	// Fill with data
 	data := map[string]string{
-		"1000" : "Astralis",
+		"1000": "Astralis",
 	}
 	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second * 30)
+	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
@@ -152,12 +153,12 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 
 	// Fill with data
 	data := map[string]string{
-		"1000" : "Astralis",
-		"1001" : "Vitality",
-		"1002" : "Gambit",
+		"1000": "Astralis",
+		"1001": "Vitality",
+		"1002": "Gambit",
 	}
 	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second * 30)
+	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time
@@ -174,23 +175,23 @@ func TestSmartContract_DeleteData(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Fill
-	data := map[string]string {
-		"1000" : "Astralis",
-		"1001" : "Vitality",
-		"1002" : "Gambit",
-		"1003" : "OG",
-		"1004" : "Na'Vi",
-		"1005" : "Furia",
+	data := map[string]string{
+		"1000": "Astralis",
+		"1001": "Vitality",
+		"1002": "Gambit",
+		"1003": "OG",
+		"1004": "Na'Vi",
+		"1005": "Furia",
 	}
 	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second * 30)
+	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
 	// Delete
 	err = buffer.DeleteElements("1001", "1003")
 	assert.Nil(t, err)
 
-	assert.Nil(t, bufferLengthWithin(buffer, 4, time.Second * 10))
+	assert.Nil(t, bufferLengthWithin(buffer, 4, time.Second*10))
 
 	// Make sure goroutine cancels in time
 	cancel()
@@ -205,13 +206,13 @@ func TestSmartContract_UpdateData(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Fill
-	data := map[string]string {
-		"1000" : "Astralis",
-		"1001" : "Vitality",
-		"1002" : "Gambit",
+	data := map[string]string{
+		"1000": "Astralis",
+		"1001": "Vitality",
+		"1002": "Gambit",
 	}
 	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second * 30)
+	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
 	// Modify and insert data
@@ -220,7 +221,7 @@ func TestSmartContract_UpdateData(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check if value was updated (until timeout)
-	assert.Nil(t, bufferEqualsWithin(buffer, "1000", "G2", time.Second * 2))
+	assert.Nil(t, bufferEqualsWithin(buffer, "1000", "G2", time.Second*2))
 
 	// Make sure goroutine cancels in time
 	cancel()
@@ -240,7 +241,7 @@ func TestSmartContract_PutManyData(t *testing.T) {
 		data[strconv.Itoa(i)] = "Winner"
 	}
 	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second * 30)
+	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
 	d, err := buffer.GetBuffer()
@@ -254,7 +255,7 @@ func TestSmartContract_PutManyData(t *testing.T) {
 	for i := 0; i < 32; i++ {
 		data[strconv.Itoa(i)] = "Loser"
 	}
-	err = putElementsAndWait(buffer, data, time.Second * 30)
+	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
 	// Make sure goroutine cancels in time

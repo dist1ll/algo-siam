@@ -2,7 +2,6 @@ package client
 
 import "os"
 
-
 // EnvURLNode is the environment variable name for the URL of the remote Algorand instance.
 // The value should be an IP address with port number (e.g. `191.158.1.12:1225`)
 const EnvURLNode = "AEMA_URL_NODE"
