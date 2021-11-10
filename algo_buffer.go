@@ -90,6 +90,9 @@ func GetDefaultManageConfig() *ManageConfig {
 // This method uses the client.CreateAlgorandClientWrapper implementation. If you want to
 // use your own implementation of client.AlgorandClient, use CreateAlgorandBuffer instead.
 func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
+	if !client.HasEnvironmentVars() {
+		return nil, errors.New("configuration variables are not set. See README")
+	}
 	url, token, base64key := client.GetAlgorandEnvironmentVars()
 	a, err := client.CreateAlgorandClientWrapper(url, token)
 	if err != nil {
