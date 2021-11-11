@@ -5,6 +5,7 @@ package siam
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -246,6 +247,29 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	d, err := buffer.GetBuffer()
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(d), "buffer should be empty, because kv pair exceeds 128 byte total")
+	cancel()
+}
+
+func TestAlgorandBuffer_TooMany(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	// Put Maximum Data
+	data := make(map[string]string, client.GlobalBytes)
+	for i := 0; i < client.GlobalBytes; i++ {
+		data[strconv.Itoa(i)] = ""
+	}
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	err := putElementsAndWait(buffer, data, time.Second)
+	assert.Nil(t, err)
+
+	err = putElementsAndWait(buffer, map[string]string{"x": "y"}, time.Millisecond*100)
+	assert.NotNil(t, err)
+
+	// confirm buffer size
+	d, err := buffer.GetBuffer()
+	assert.Nil(t, err)
+	_, exists := d["x"]
+	assert.False(t, exists, "buffer should not have 'x' element")
 	cancel()
 }
 

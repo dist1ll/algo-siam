@@ -235,8 +235,8 @@ func TestSmartContract_PutManyData(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Fill
-	data := make(map[string]string, 64)
-	for i := 0; i < 64; i++ {
+	data := make(map[string]string, client.GlobalBytes)
+	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = "Winner"
 	}
 	wg, cancel := buffer.SpawnManagingRoutine(nil)
