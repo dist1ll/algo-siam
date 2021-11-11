@@ -213,6 +213,11 @@ func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
 // non-existing keys will be created.
 func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
 	for k, v := range data {
+		if len(k)+len(v) > 128 {
+			return errors.New("kv pair cannot exceed 128 bytes")
+		}
+	}
+	for k, v := range data {
 		ab.storeArguments <- models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: v}}
 	}
 	return nil

@@ -5,6 +5,7 @@ package siam
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -217,7 +218,6 @@ func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 func TestAlgorandBuffer_PutElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-
 	// store in buffer
 	data := map[string]string{
 		"2654658": "Astralis",
@@ -225,11 +225,27 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
-
 	// confirm buffer size
 	d, err := buffer.GetBuffer()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
+	cancel()
+}
+
+func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	// store kv pair that exceeds 128 byte
+	data := map[string]string{
+		"key": strings.Repeat("x", 128),
+	}
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	err := putElementsAndWait(buffer, data, time.Second)
+	assert.NotNil(t, err)
+	// confirm buffer size
+	d, err := buffer.GetBuffer()
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(d), "buffer should be empty, because kv pair exceeds 128 byte total")
 	cancel()
 }
 
