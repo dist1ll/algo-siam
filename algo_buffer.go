@@ -227,6 +227,22 @@ func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
 	return nil
 }
 
+// ContainsWithin returns true if the AlgorandBuffer contains the given data within time.
+func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration) bool {
+	now := time.Now()
+	for time.Now().Sub(now) < t {
+		time.Sleep(time.Millisecond * 50)
+		data, err := ab.GetBuffer()
+		if err != nil {
+			return false
+		}
+		if mapContainsMap(data, m) {
+			return true
+		}
+	}
+	return false
+}
+
 // SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage
 // and cancel function to signal termination, and a WaitGroup to wait for the cancellation
 // to be completed.

@@ -2,6 +2,7 @@ package siam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -38,11 +39,10 @@ func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration)
 	if err != nil {
 		return err
 	}
-	err = bufferDataInsertedWithin(a, m, t)
-	if err != nil {
-		return err
+	if a.ContainsWithin(m, t) {
+		return nil
 	}
-	return nil
+	return errors.New("data wasn't added in time")
 }
 
 // mapContainsMap returns true if every element of a map 'sub' is contained in
