@@ -15,12 +15,6 @@ import (
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
 
-// Schema of AlgorandBuffer.
-const localInts = 0
-const localBytes = 0
-const globalInts = 0
-const globalBytes = 64
-
 // Arguments
 const MaxArgs = 16
 const MaxKVArgs = 8
@@ -79,8 +73,8 @@ func ValidAccount(account models.Account) bool {
 // GenerateSchemas generates application state schemas for the Algorand oracle application.
 // It returns an object of type types.StateSchema.
 func GenerateSchemas() (types.StateSchema, types.StateSchema) {
-	globalSchema := types.StateSchema{NumUint: uint64(globalInts), NumByteSlice: uint64(globalBytes)}
-	localSchema := types.StateSchema{NumUint: uint64(localInts), NumByteSlice: uint64(localBytes)}
+	globalSchema := types.StateSchema{NumUint: uint64(GlobalInts), NumByteSlice: uint64(GlobalBytes)}
+	localSchema := types.StateSchema{NumUint: uint64(LocalInts), NumByteSlice: uint64(LocalBytes)}
 	return localSchema, globalSchema
 }
 

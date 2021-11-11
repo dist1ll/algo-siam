@@ -236,7 +236,7 @@ func (a *AlgorandMock) StoreGlobals(acc crypto.Account, appId uint64, kv []model
 			}
 		}
 		// if no key exists, create new (as long as space is there)
-		if noneFound && len(state) < globalBytes {
+		if noneFound && len(state) < GlobalBytes {
 			state = append(state, arg)
 		}
 	}

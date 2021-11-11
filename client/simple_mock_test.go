@@ -27,10 +27,10 @@ func TestAlgorandMock_DummyApps(t *testing.T) {
 	assert.EqualValues(t, 8, c.Account.CreatedApps[2].Id)
 
 	for _, val := range c.Account.CreatedApps {
-		assert.EqualValues(t, globalBytes, val.Params.GlobalStateSchema.NumByteSlice)
-		assert.EqualValues(t, globalInts, val.Params.GlobalStateSchema.NumUint)
-		assert.EqualValues(t, localBytes, val.Params.LocalStateSchema.NumByteSlice)
-		assert.EqualValues(t, localInts, val.Params.LocalStateSchema.NumUint)
+		assert.EqualValues(t, GlobalBytes, val.Params.GlobalStateSchema.NumByteSlice)
+		assert.EqualValues(t, GlobalInts, val.Params.GlobalStateSchema.NumUint)
+		assert.EqualValues(t, LocalBytes, val.Params.LocalStateSchema.NumByteSlice)
+		assert.EqualValues(t, LocalInts, val.Params.LocalStateSchema.NumUint)
 	}
 }
 

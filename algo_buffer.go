@@ -229,6 +229,9 @@ func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
 
 // ContainsWithin returns true if the AlgorandBuffer contains the given data within time.
 func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration) bool {
+	if len(m) > client.GlobalBytes {
+		return false
+	}
 	now := time.Now()
 	for time.Now().Sub(now) < t {
 		time.Sleep(time.Millisecond * 50)
