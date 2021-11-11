@@ -48,6 +48,9 @@ func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration)
 // mapContainsMap returns true if every element of a map 'sub' is contained in
 // a map 'super'
 func mapContainsMap(super map[string]string, sub map[string]string) bool {
+	if len(sub) == 0 || len(super) == 0 {
+		return false
+	}
 	if len(super) < len(sub) {
 		return false
 	}

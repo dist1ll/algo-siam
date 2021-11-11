@@ -273,6 +273,24 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	cancel()
 }
 
+func TestAlgorandBuffer_ContainsWithin(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	// store in buffer
+	data := map[string]string{
+		"x": "y",
+	}
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	err := putElementsAndWait(buffer, data, time.Second)
+	assert.Nil(t, err)
+	// Contains should return true, because x is inside the buffer
+	assert.True(t, buffer.ContainsWithin(map[string]string{"x": "y"}, time.Second))
+	// Contains should return false on an empty map
+	assert.False(t, buffer.ContainsWithin(map[string]string{}, time.Second))
+
+	cancel()
+}
+
 func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
