@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"reflect"
 	"runtime"
@@ -202,7 +201,6 @@ func (a *AlgorandMock) DeleteGlobals(acc crypto.Account, appId uint64, keys ...s
 	for _, k := range keys {
 		for j, kv := range state {
 			if k == kv.Key {
-				fmt.Println("deleting!!")
 				result := make([]models.TealKeyValue, 0)
 				result = append(result, state[:j]...)
 				state = append(result, state[j+1:]...)

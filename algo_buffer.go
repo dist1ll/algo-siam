@@ -333,6 +333,8 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 			}
 			// if successful, reset delArray
 			delArray = make([]string, 0, 1000)
+			// always make sure that ALL delete requests are processed before store
+			continue
 		}
 
 		// attempt to store data

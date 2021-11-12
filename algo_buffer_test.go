@@ -320,3 +320,43 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 
 	cancel()
 }
+
+// Assuming we provide >16 delete arguments AND afterwards immediately provide
+// >16 store arguments, test that the Manage routine executes ALL delete arguments
+// first, before ever executing the store arguments
+func TestAlgorandBuffer_DeletePriority(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	// Fill Buffer first
+	data := make(map[string]string, client.GlobalBytes)
+	for i := 0; i < client.GlobalBytes; i++ {
+		data[strconv.Itoa(i)] = ""
+	}
+	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	err := putElementsAndWait(buffer, data, time.Second)
+	assert.Nil(t, err)
+
+	// Now create delete args and store args
+	del := make([]string, 2*client.MaxArgs)
+	for i := 0; i < client.MaxArgs*2; i++ {
+		t := i % client.MaxArgs
+		del[i] = strconv.Itoa(t)
+	}
+
+	put := make(map[string]string, client.MaxArgs)
+	for i := 0; i < client.MaxArgs; i++ {
+		put[strconv.Itoa(i)] = ""
+	}
+
+	// Put delete and store args
+	err = buffer.DeleteElements(del...)
+	assert.Nil(t, err)
+	err = buffer.PutElements(put)
+	assert.Nil(t, err)
+
+	// We expect full buffer
+	assert.Nil(t, bufferLengthWithin(buffer, client.GlobalBytes, time.Second*1))
+
+	cancel()
+}
