@@ -227,6 +227,11 @@ func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
 // doesn't exist, nothing happens.
 func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
 	for _, k := range keys {
+		if len(k) > 128 {
+			return errors.New("key can't exceed 128 bytes")
+		}
+	}
+	for _, k := range keys {
 		ab.deleteArguments <- k
 	}
 	return nil
