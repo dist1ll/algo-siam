@@ -66,23 +66,6 @@ func mapContainsMap(super map[string]string, sub map[string]string) bool {
 	return true
 }
 
-// bufferDataInsertedWithin returns nil if the given data 'm' is inserted into the buffer
-// within a given time frame.
-func bufferDataInsertedWithin(a *AlgorandBuffer, m map[string]string, t time.Duration) error {
-	now := time.Now()
-	for time.Now().Sub(now) < t {
-		time.Sleep(time.Millisecond * 50)
-		data, err := a.GetBuffer()
-		if err != nil {
-			return err
-		}
-		if mapContainsMap(data, m) {
-			return nil
-		}
-	}
-	return fmt.Errorf("time limit exceeded. buffer data mismatch")
-}
-
 // bufferLengthWithin returns nil if the given buffer reached a given buffer
 // length within a given time frame. Otherwise returns error. This is a blocking
 // call
@@ -90,7 +73,9 @@ func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 	now := time.Now()
 	for time.Now().Sub(now) < t {
 		time.Sleep(time.Millisecond * 50)
-		data, err := a.GetBuffer()
+		ctx, cancel := context.WithTimeout(context.Background(), t-time.Now().Sub(now))
+		data, err := a.GetBuffer(ctx)
+		cancel()
 		if err != nil {
 			return err
 		}
@@ -99,25 +84,6 @@ func bufferLengthWithin(a *AlgorandBuffer, l int, t time.Duration) error {
 		}
 	}
 	return fmt.Errorf("time limit exceeded. buffer length expected %d", l)
-}
-
-// bufferEqualsWithin returns nil if the 'buffer[key] = expected' within a given duration.
-// Use this to check if a value got correctly inserted or updated into the AlgorandBuffer.
-func bufferEqualsWithin(a *AlgorandBuffer, key string, expected string, t time.Duration) error {
-	now := time.Now()
-	data, err := a.GetBuffer()
-	for time.Now().Sub(now) < t {
-		data, err = a.GetBuffer()
-		if err != nil {
-			return err
-		}
-		if _, ok := data[key]; !ok {
-			continue
-		} else if data[key] == expected {
-			return nil
-		}
-	}
-	return fmt.Errorf("time limit exceeded. buffer['%s']='%s', but expected '%s'", key, data[key], expected)
 }
 
 // waitTimeout waits for the sync.WaitGroup until a timeout.

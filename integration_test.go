@@ -243,7 +243,7 @@ func TestSmartContract_PutManyData(t *testing.T) {
 	err = putElementsAndWait(buffer, data, time.Second*30)
 	assert.Nil(t, err)
 
-	d, err := buffer.GetBuffer()
+	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	for key, val := range d {
 		assert.Equal(t, data[key], val)

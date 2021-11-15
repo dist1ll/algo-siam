@@ -210,7 +210,7 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
-	data, err := buffer.GetBuffer()
+	data, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.Len(t, data, 0)
@@ -227,7 +227,7 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 	// confirm buffer size
-	d, err := buffer.GetBuffer()
+	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
 	cancel()
@@ -244,7 +244,7 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.NotNil(t, err)
 	// confirm buffer size
-	d, err := buffer.GetBuffer()
+	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(d), "buffer should be empty, because kv pair exceeds 128 byte total")
 	cancel()
@@ -266,7 +266,7 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// confirm buffer size
-	d, err := buffer.GetBuffer()
+	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	_, exists := d["x"]
 	assert.False(t, exists, "buffer should not have 'x' element")
@@ -281,13 +281,12 @@ func TestAlgorandBuffer_ContainsWithin(t *testing.T) {
 		"x": "y",
 	}
 	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second)
+	err := putElementsAndWait(buffer, data, time.Second*2)
 	assert.Nil(t, err)
 	// Contains should return true, because x is inside the buffer
 	assert.True(t, buffer.ContainsWithin(map[string]string{"x": "y"}, time.Second))
 	// Contains should return false on an empty map
 	assert.False(t, buffer.ContainsWithin(map[string]string{}, time.Second))
-
 	cancel()
 }
 
@@ -308,13 +307,13 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 
 	err = buffer.DeleteElements("1001")
 	assert.Nil(t, err)
-	d, _ := buffer.GetBuffer()
+	d, _ := buffer.GetBuffer(context.Background())
 	fmt.Println(len(d))
 	// We expect 3 items
 	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second*5))
 
 	// Make sure that key=1001 doesn't exist
-	b, err := buffer.GetBuffer()
+	b, err := buffer.GetBuffer(context.Background())
 	_, ok := b["1001"]
 	assert.False(t, ok)
 

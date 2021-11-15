@@ -191,9 +191,9 @@ func (ab *AlgorandBuffer) Health() error {
 	return err
 }
 
-// GetBuffer returns the stored global state of this buffers algorand application
-func (ab *AlgorandBuffer) GetBuffer() (map[string]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), ab.timeoutLength)
+// GetBuffer returns the stored global state of this buffer's associated Algorand application.
+func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, ab.timeoutLength)
 	app, err := ab.Client.GetApplicationByID(ab.AppId, ctx)
 	cancel()
 	if err != nil {
@@ -240,7 +240,10 @@ func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration) b
 	now := time.Now()
 	for time.Now().Sub(now) < t {
 		time.Sleep(time.Millisecond * 50)
-		data, err := ab.GetBuffer()
+		// only remaining time left
+		ctx, cancel := context.WithTimeout(context.Background(), t-time.Now().Sub(now))
+		data, err := ab.GetBuffer(ctx)
+		cancel()
 		if err != nil {
 			return false
 		}
