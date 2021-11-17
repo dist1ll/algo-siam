@@ -75,16 +75,12 @@ type ManageConfig struct {
 	// HealthCheckInterval determines the interval between node and application
 	// health checks.
 	HealthCheckInterval time.Duration
-	// ChannelPollFrequency determines how much time passes between subsequent
-	// checks of the store/delete channels.
-	ChannelPollFrequency time.Duration
 }
 
 func GetDefaultManageConfig() *ManageConfig {
 	return &ManageConfig{
-		SleepTime:            client.AlgorandDefaultMinSleep,
-		HealthCheckInterval:  time.Second,
-		ChannelPollFrequency: time.Microsecond,
+		SleepTime:           client.AlgorandDefaultMinSleep,
+		HealthCheckInterval: time.Second,
 	}
 }
 
