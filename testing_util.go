@@ -14,7 +14,7 @@ import (
 // Utility function that creates an AlgorandBuffer, and subsequently deletes the application
 // so that only one remains.
 func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
-	buffer, err := CreateAlgorandBufferFromEnv()
+	buffer, err := CreateAlgorandBufferFromEnv(nil)
 	if err != nil {
 		t.Fatal(err)
 	}

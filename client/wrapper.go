@@ -74,7 +74,7 @@ func (a *AlgorandClientWrapper) ExecuteTransaction(acc crypto.Account, txn types
 		return models.PendingTransactionInfoResponse{}, err
 	}
 
-	_, err = WaitForConfirmation(txID, a, 5)
+	_, err = WaitForConfirmation(txID, a, 5, ctx)
 	if err != nil {
 		return models.PendingTransactionInfoResponse{}, err
 	}
@@ -93,7 +93,7 @@ func (a *AlgorandClientWrapper) DeleteApplication(acc crypto.Account, appId uint
 	txn, _ := future.MakeApplicationDeleteTx(appId, nil, nil, nil, nil,
 		params, acc.Address, nil, types.Digest{}, [32]byte{}, types.Address{})
 
-	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
+	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout*2)
 	_, err = a.ExecuteTransaction(acc, txn, ctx)
 	cancel()
 	return err
@@ -114,7 +114,7 @@ func (a *AlgorandClientWrapper) CreateApplication(acc crypto.Account, approve st
 		nil, nil, nil, nil, params, acc.Address, nil,
 		types.Digest{}, [32]byte{}, types.Address{})
 
-	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout)
+	ctx, cancel = context.WithTimeout(context.Background(), AlgorandDefaultTimeout*2)
 	result, err := a.ExecuteTransaction(acc, txn, ctx)
 	cancel()
 	if err != nil {

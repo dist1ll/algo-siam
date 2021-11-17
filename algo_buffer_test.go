@@ -19,7 +19,7 @@ import (
 // If HealthCheck and token verification works, expect no errors
 func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	if err != nil {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
@@ -29,7 +29,7 @@ func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 func TestAlgorandBuffer_NoHealth(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.SetError(true, (*client.AlgorandMock).HealthCheck)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	if err == nil {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
@@ -41,7 +41,7 @@ func TestAlgorandBuffer_NoHealth(t *testing.T) {
 func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.SetError(true, (*client.AlgorandMock).Status)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	if err == nil {
 		t.Errorf("failing token verification doesn't return error %s", err)
 	}
@@ -54,7 +54,7 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 func TestAlgorandBuffer_CorrectBufferWhenValid(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestAlgorandBuffer_DeletionError(t *testing.T) {
 	c.CreateDummyApps(6, 18, 32)
 	c.SetError(true, (*client.AlgorandMock).DeleteApplication)
 
-	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	if err == nil {
 		t.Fatalf("blocking deleteApp doesn't return error.")
 	}
@@ -86,7 +86,7 @@ func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 
 	// Check if client is made valid.
 	assert.False(t, client.ValidAccount(c.Account))
-	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	assert.True(t, client.ValidAccount(c.Account))
 
 	assert.Nil(t, err)
@@ -102,7 +102,7 @@ func TestAlgorandBuffer_DeletePartial(t *testing.T) {
 
 	// Check if client is made valid.
 	assert.False(t, client.ValidAccount(c.Account))
-	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
@@ -117,7 +117,7 @@ func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
 
 	// Check if client is made valid.
 	assert.False(t, client.ValidAccount(c.Account))
-	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	assert.True(t, client.ValidAccount(c.Account))
 
 	// Check if remaining app is the one that was created first
@@ -128,7 +128,7 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 
 	assert.False(t, client.ValidAccount(c.Account))
-	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
@@ -140,7 +140,7 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 // every situation.
 func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 
 	c.SetError(true, (*client.AlgorandMock).HealthCheck)
 
@@ -166,7 +166,7 @@ func TestAlgorandBuffer_ManageQuits(t *testing.T) {
 // into the buffer, and the health check times are very long.
 func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
@@ -190,13 +190,13 @@ func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
 // AFTER the buffer has been verified and initialized
 func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 
 	// Add application after setup
 	c.AddDummyApps(56)
 	assert.False(t, client.ValidAccount(c.Account))
 
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 
 	// Manage routine should make account valid in less than a second
 	now := time.Now()
@@ -205,11 +205,12 @@ func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
 	}
 	assert.True(t, client.ValidAccount(c.Account))
 	cancel()
+	wg.Wait()
 }
 
 func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	data, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
@@ -218,12 +219,12 @@ func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 
 func TestAlgorandBuffer_PutElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	// store in buffer
 	data := map[string]string{
 		"2654658": "Astralis",
 	}
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 	// confirm buffer size
@@ -231,16 +232,17 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
 	cancel()
+	wg.Wait()
 }
 
 func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	// store kv pair that exceeds 128 byte
 	data := map[string]string{
 		"key": strings.Repeat("x", 128),
 	}
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.NotNil(t, err)
 	// confirm buffer size
@@ -248,17 +250,18 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(d), "buffer should be empty, because kv pair exceeds 128 byte total")
 	cancel()
+	wg.Wait()
 }
 
 func TestAlgorandBuffer_TooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	// Put Maximum Data
 	data := make(map[string]string, client.GlobalBytes)
 	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = ""
 	}
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 
@@ -271,16 +274,17 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	_, exists := d["x"]
 	assert.False(t, exists, "buffer should not have 'x' element")
 	cancel()
+	wg.Wait()
 }
 
 func TestAlgorandBuffer_ContainsWithin(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	// store in buffer
 	data := map[string]string{
 		"x": "y",
 	}
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second*2)
 	assert.Nil(t, err)
 	// Contains should return true, because x is inside the buffer
@@ -288,11 +292,12 @@ func TestAlgorandBuffer_ContainsWithin(t *testing.T) {
 	// Contains should return false on an empty map
 	assert.False(t, buffer.ContainsWithin(map[string]string{}, time.Second))
 	cancel()
+	wg.Wait()
 }
 
 func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 
 	// store in buffer
 	data := map[string]string{
@@ -301,7 +306,7 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 		"1002": "Gambit",
 		"1003": "OG",
 	}
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 
@@ -318,6 +323,7 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	assert.False(t, ok)
 
 	cancel()
+	wg.Wait()
 }
 
 // Assuming we provide >16 delete arguments AND afterwards immediately provide
@@ -325,14 +331,14 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 // first, before ever executing the store arguments
 func TestAlgorandBuffer_DeletePriority(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 
 	// Fill Buffer first
 	data := make(map[string]string, client.GlobalBytes)
 	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = ""
 	}
-	_, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
+	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
 	err := putElementsAndWait(buffer, data, time.Second)
 	assert.Nil(t, err)
 
@@ -358,4 +364,5 @@ func TestAlgorandBuffer_DeletePriority(t *testing.T) {
 	assert.Nil(t, bufferLengthWithin(buffer, client.GlobalBytes, time.Second*1))
 
 	cancel()
+	wg.Wait()
 }

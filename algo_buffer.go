@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
+	"os"
 	"sync"
 	"time"
 
@@ -60,6 +62,8 @@ type AlgorandBuffer struct {
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
+
+	logger *log.Logger
 }
 
 type ManageConfig struct {
@@ -89,7 +93,7 @@ func GetDefaultManageConfig() *ManageConfig {
 //
 // This method uses the client.CreateAlgorandClientWrapper implementation. If you want to
 // use your own implementation of client.AlgorandClient, use CreateAlgorandBuffer instead.
-func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
+func CreateAlgorandBufferFromEnv(logger *log.Logger) (*AlgorandBuffer, error) {
 	if !client.HasEnvironmentVars() {
 		return nil, errors.New("configuration variables are not set. See README")
 	}
@@ -98,14 +102,17 @@ func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return CreateAlgorandBuffer(a, base64key)
+	return CreateAlgorandBuffer(a, base64key, logger)
 }
 
 // CreateAlgorandBuffer creates a new instance of AlgorandBuffer. The buffer requires an
 // client.AlgorandClient to perform persistence and setup operations on the Algorand blockchain.
 // base64key is the base64-encoded private key of the 'target account'. The target account
 // creates and maintains the applications state on the blockchain.
-func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandBuffer, error) {
+func CreateAlgorandBuffer(c client.AlgorandClient, base64key string, logger *log.Logger) (*AlgorandBuffer, error) {
+	if logger == nil {
+		logger = log.New(os.Stdout, "SIAM  ", log.LstdFlags|log.Lshortfile)
+	}
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(base64key)
 	if err != nil {
@@ -123,6 +130,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 		deleteArguments: make(chan string, 64),
 		storeArguments:  make(chan models.TealKeyValue, 64),
 		timeoutLength:   client.AlgorandDefaultTimeout,
+		logger:          logger,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
@@ -131,7 +139,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, base64key string) (*AlgorandB
 	if err != nil {
 		return buffer, err
 	}
-
+	logger.Println("API endpoint and Algorand dApp ready.")
 	return buffer, err
 }
 
@@ -259,6 +267,12 @@ func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration) b
 	return false
 }
 
+// SetLoggingFlags sets the flags of this buffer's logger. To suppress
+// logs altogether, set flags to 0
+func (ab *AlgorandBuffer) SetLoggingFlags(flags int) {
+	ab.logger.SetFlags(flags)
+}
+
 // SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage
 // and cancel function to signal termination, and a WaitGroup to wait for the cancellation
 // to be completed.
@@ -268,7 +282,9 @@ func (ab *AlgorandBuffer) SpawnManagingRoutine(cfg *ManageConfig) (*sync.WaitGro
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		ab.logger.Println("managing routine started")
 		ab.Manage(ctx, cfg)
+		ab.logger.Println("managing routine exited")
 	}()
 	return &wg, cancel
 }
@@ -293,9 +309,9 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 	kvArray := make([]models.TealKeyValue, 0, 1000)
 
 	for ctx.Err() == nil {
-
 		err := ab.ensureRemoteValid(ctx)
 		if err != nil {
+			ab.logger.Printf("couldn't reach endpoint: %s", err)
 			select {
 			case <-ctx.Done():
 				return
@@ -331,7 +347,7 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		if len(delArray) > 0 {
 			err = ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
 			if err != nil {
-				fmt.Println(err)
+				ab.logger.Printf("failed deleting globals: %s", err)
 				select {
 				case <-ctx.Done():
 					return
@@ -349,7 +365,7 @@ func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
 		if len(kvArray) > 0 {
 			err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
 			if err != nil {
-				fmt.Println(err)
+				ab.logger.Printf("failed storing globals: %s", err)
 				select {
 				case <-ctx.Done():
 					return
@@ -433,7 +449,12 @@ func (ab *AlgorandBuffer) manageDeletion() error {
 func (ab *AlgorandBuffer) checkConnection() error {
 	err := ab.Health()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed on node health check. bad url? %s", err)
 	}
-	return ab.VerifyToken()
+	err = ab.VerifyToken()
+	if err != nil {
+		// note: for some reason, even a malformed URL can pass the health call.
+		return fmt.Errorf("failed on verifying token. bad token or URL has trailing slash. %s", err)
+	}
+	return err
 }

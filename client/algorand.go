@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/algorand/go-algorand-sdk/future"
-	"strings"
 	"time"
 
 	"github.com/algorand/go-algorand-sdk/crypto"
@@ -135,45 +134,36 @@ func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []by
 	return compiledProgram
 }
 
-// Utility function that waits for a given txId to be confirmed by the network
-func WaitForConfirmation(txID string, client AlgorandClient, timeout uint64) (models.PendingTransactionInfoResponse, error) {
+// WaitForConfirmation waits for a given number of rounds (timeout) to check if the
+// transaction was successfully confirmed.
+func WaitForConfirmation(txID string, client AlgorandClient, timeout uint64, ctx context.Context) (models.PendingTransactionInfoResponse, error) {
 	pt := new(models.PendingTransactionInfoResponse)
 	if client == nil || txID == "" || timeout < 0 {
-		fmt.Printf("Bad arguments for waitForConfirmation")
-		var msg = errors.New("Bad arguments for waitForConfirmation")
-		return *pt, msg
-
+		return *pt, errors.New("bad arguments for waitForConfirmation")
 	}
 
-	status, err := client.Status(context.Background())
+	status, err := client.Status(ctx)
 	if err != nil {
-		fmt.Printf("error getting algod status: %s\n", err)
-		var msg = errors.New(strings.Join([]string{"error getting algod status: "}, err.Error()))
-		return *pt, msg
+		return *pt, fmt.Errorf("error getting algod status: %s", err)
 	}
+
 	startRound := status.LastRound + 1
 	currentRound := startRound
 
 	for currentRound < (startRound + timeout) {
 		*pt, _, err = client.PendingTransactionInformation(txID, context.Background())
 		if err != nil {
-			fmt.Printf("error getting pending transaction: %s\n", err)
-			var msg = errors.New(strings.Join([]string{"error getting pending transaction: "}, err.Error()))
-			return *pt, msg
+			return *pt, fmt.Errorf("error getting pending txn: %s", err)
 		}
 		if pt.ConfirmedRound > 0 {
-			fmt.Printf("txn confirmed in round %d\n", pt.ConfirmedRound)
 			return *pt, nil
 		}
 		if pt.PoolError != "" {
-			fmt.Printf("There was a pool error, then the transaction has been rejected!")
-			var msg = errors.New("There was a pool error, then the transaction has been rejected")
-			return *pt, msg
+			return *pt, errors.New("there was a pool error, then the transaction has been rejected")
 		}
 		fmt.Printf("waiting for confirmation\n")
 		status, err = client.StatusAfterBlock(currentRound, context.Background())
 		currentRound++
 	}
-	msg := errors.New("tx not found in round range")
-	return *pt, msg
+	return *pt, errors.New("tx not found in round range")
 }
