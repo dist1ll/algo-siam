@@ -288,9 +288,9 @@ func TestAlgorandBuffer_ContainsWithin(t *testing.T) {
 	err := putElementsAndWait(buffer, data, time.Second*2)
 	assert.Nil(t, err)
 	// Contains should return true, because x is inside the buffer
-	assert.True(t, buffer.ContainsWithin(map[string]string{"x": "y"}, time.Second))
+	assert.True(t, buffer.ContainsWithin(map[string]string{"x": "y"}, time.Second, 0))
 	// Contains should return false on an empty map
-	assert.False(t, buffer.ContainsWithin(map[string]string{}, time.Second))
+	assert.False(t, buffer.ContainsWithin(map[string]string{}, time.Second, 0))
 	cancel()
 	wg.Wait()
 }

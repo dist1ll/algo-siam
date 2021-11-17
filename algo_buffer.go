@@ -249,13 +249,13 @@ func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
 }
 
 // ContainsWithin returns true if the AlgorandBuffer contains the given data within time.
-func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration) bool {
+// The polling interval determines how often the endpoint is pinged for new data.
+func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration, pollingInterval time.Duration) bool {
 	if len(m) > client.GlobalBytes {
 		return false
 	}
 	now := time.Now()
 	for time.Now().Sub(now) < t {
-		time.Sleep(time.Millisecond * 50)
 		// only remaining time left
 		ctx, cancel := context.WithTimeout(context.Background(), t-time.Now().Sub(now))
 		data, err := ab.GetBuffer(ctx)
@@ -266,6 +266,7 @@ func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration) b
 		if mapContainsMap(data, m) {
 			return true
 		}
+		time.Sleep(pollingInterval)
 	}
 	return false
 }

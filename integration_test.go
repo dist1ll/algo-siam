@@ -220,7 +220,7 @@ func TestSmartContract_UpdateData(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check if value was updated (until timeout)
-	assert.True(t, buffer.ContainsWithin(data, time.Second*2))
+	assert.True(t, buffer.ContainsWithin(data, time.Second*2, time.Millisecond*50))
 
 	// Make sure goroutine cancels in time
 	cancel()

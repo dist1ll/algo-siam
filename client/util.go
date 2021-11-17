@@ -3,7 +3,8 @@ package client
 import "os"
 
 // EnvURLNode is the environment variable name for the URL of the remote Algorand instance.
-// The value should be an IP address with port number (e.g. `191.158.1.12:1225`)
+// The value should be an IP address with port number (e.g. `191.158.1.12:1225`) or a domain
+// like `https://testnet.algoexplorerapi.io`
 const EnvURLNode = "SIAM_URL_NODE"
 
 // EnvAlgodToken is the environment variable name for the API token of the Algorand node.

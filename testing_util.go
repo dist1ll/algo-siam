@@ -39,7 +39,7 @@ func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration)
 	if err != nil {
 		return err
 	}
-	if a.ContainsWithin(m, t) {
+	if a.ContainsWithin(m, t, time.Millisecond*50) {
 		return nil
 	}
 	return errors.New("data wasn't added in time")
