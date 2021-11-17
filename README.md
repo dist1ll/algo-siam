@@ -66,8 +66,20 @@ Here you can configure how frequently the `AlgorandBuffer` should talk to the no
 
 ## Writing, Deleting and Inspecting Data
 
-Now that you have a working `AlgorandBuffer`, you can start storing and deleting data. You can do that entirely
-asynchronously.
+Now that you have a working `AlgorandBuffer`, you can start fetching, storing and deleting data. 
+This is done asynchronously.
+
+### Inspecting Data
+To fetch the actual data that currently lives on the blockchain, you can use `GetBuffer`
+```go
+ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+data, err := buffer.GetBuffer(ctx)  //returns map[string]string of key-value store
+```
+
+At the moment, `data` will be an empty map. `GetBuffer` returns the actual data stored in the Algorand
+application. You can use it to check if your data has been written to the blockchain.
+
+### Writing Data
 
 ```go
 data := map[string]string{
@@ -76,37 +88,35 @@ data := map[string]string{
     "match_256849": "Gambit",
 }
 
-buffer.PutElements(data)
+err = buffer.PutElements(data)
 ```
-Now the goroutine will write this data to the Siam app. You should see a result soon. If you want to know if the data has been written to the chain, you can use
-```go
-// Polling interval of one second
-ok := buffer.ContainsWithin(data, time.Minute, time.Second)
-``` 
-
-If the data was successfully inserted, you can now delete some of that data
+Now the goroutine will write this data to the Siam app. You should see a result soon. 
+If you want to wait for the data to be submitted, use
 
 ```go
-if ok {
-    buffer.DeleteElements("match_256849", "match_256847")
-}
+buffer.WaitForFlush()
 ```
-### Inspecting Data
-To fetch the actual data that currently lives on the blockchain, you can use `GetBuffer()`
+
+You can assert that the data was successfully written to by running
+
 ```go
-data, err := buffer.GetBuffer()  //returns map[string]string of key-value store
-if err != nil {
-    log.Fatal(err)
+correct := buffer.ContainsWithin(data, time.Minute, time.Second)
+if correct {
+    fmt.Println("data was correctly inserted")
 }
 ```
 
-So if you want to check if data was deleted you can write
+### Deleting Data
+
+Once you've confirmed that data exists on the Siam application, you can safely call `DeleteElements`
+
 ```go
-for len(data) != 1 {
-    data, _ = buffer.GetBuffer()
-    time.Sleep(time.Millisecond * 200)
-}
-``` 
+// delete two matches
+err = buffer.DeleteElements("match_256846", "match_256847")
+buffer.WaitForFlush()
+```
+
+## Example
 ## Existing Oracle Apps
 
 TODO

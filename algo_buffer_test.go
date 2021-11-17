@@ -67,8 +67,6 @@ func TestAlgorandBuffer_CorrectBufferWhenValid(t *testing.T) {
 	assert.EqualValues(t, 6, buffer.AppId)
 }
 
-// AppChannel should not return anything if the DeleteApplication function
-// returns errors.
 func TestAlgorandBuffer_DeletionError(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6, 18, 32)
@@ -224,15 +222,13 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	data := map[string]string{
 		"2654658": "Astralis",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second)
+	err := buffer.PutElementsBlocking(data, context.Background())
 	assert.Nil(t, err)
+
 	// confirm buffer size
 	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(d), "buffer should have exactly one element")
-	cancel()
-	wg.Wait()
 }
 
 func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
@@ -242,15 +238,12 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	data := map[string]string{
 		"key": strings.Repeat("x", 128),
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second)
+	err := buffer.PutElementsBlocking(data, context.Background())
 	assert.NotNil(t, err)
 	// confirm buffer size
 	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(d), "buffer should be empty, because kv pair exceeds 128 byte total")
-	cancel()
-	wg.Wait()
 }
 
 func TestAlgorandBuffer_TooMany(t *testing.T) {
@@ -261,20 +254,17 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = ""
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second)
+	err := buffer.PutElementsBlocking(data, context.Background())
 	assert.Nil(t, err)
 
-	err = putElementsAndWait(buffer, map[string]string{"x": "y"}, time.Millisecond*100)
-	assert.NotNil(t, err)
+	err = buffer.PutElementsBlocking(map[string]string{"x": "y"}, context.Background())
+	assert.Nil(t, err)
 
 	// confirm buffer size
 	d, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	_, exists := d["x"]
 	assert.False(t, exists, "buffer should not have 'x' element")
-	cancel()
-	wg.Wait()
 }
 
 func TestAlgorandBuffer_ContainsWithin(t *testing.T) {

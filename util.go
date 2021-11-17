@@ -11,6 +11,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// PartitionMap partitions a given map into partitions with a given size.
+func PartitionMap(data map[string]string, size int) []map[string]string {
+	if size >= len(data) {
+		return []map[string]string{data}
+	}
+
+	partitions := make([]map[string]string, 0)
+	currentP := make(map[string]string)
+	for k, v := range data {
+		if len(currentP) == size {
+			partitions = append(partitions, currentP)
+			currentP = make(map[string]string)
+		}
+		currentP[k] = v
+	}
+	if len(currentP) > 0 {
+		partitions = append(partitions, currentP)
+	}
+	return partitions
+}
+
 // Utility function that creates an AlgorandBuffer, and subsequently deletes the application
 // so that only one remains.
 func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {

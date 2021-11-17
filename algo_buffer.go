@@ -220,6 +220,31 @@ func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, err
 	return m, nil
 }
 
+// PutElementsBlocking stores given key-value pairs. Existing keys will be overridden,
+// non-existing keys will be created.
+func (ab *AlgorandBuffer) PutElementsBlocking(data map[string]string, ctx context.Context) error {
+	for k, v := range data {
+		if len(k)+len(v) > 128 {
+			return errors.New("kv pair cannot exceed 128 bytes")
+		}
+	}
+	// we divide the data into partitions, because the max we can store
+	// with one transaction is client.MaxKVArgs
+	partitions := PartitionMap(data, client.MaxKVArgs)
+	for _, p := range partitions {
+		kvArray := make([]models.TealKeyValue, 0, client.MaxKVArgs)
+		for k, v := range p {
+			tkv := models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: v}}
+			kvArray = append(kvArray, tkv)
+		}
+		err := ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // PutElements stores given key-value pairs. Existing keys will be overridden,
 // non-existing keys will be created.
 func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
