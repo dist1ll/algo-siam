@@ -222,14 +222,14 @@ func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, err
 
 // PutElementsBlocking stores given key-value pairs. Existing keys will be overridden,
 // non-existing keys will be created.
-func (ab *AlgorandBuffer) PutElementsBlocking(data map[string]string, ctx context.Context) error {
+func (ab *AlgorandBuffer) PutElementsBlocking(ctx context.Context, data map[string]string) error {
 	for k, v := range data {
 		if len(k)+len(v) > 128 {
 			return errors.New("kv pair cannot exceed 128 bytes")
 		}
 	}
-	// we divide the data into partitions, because the max we can store
-	// with one transaction is client.MaxKVArgs
+	// if the number of kv pairs exceed client.MaxKVArgs, we need to split them up
+	// into partitions. One txn for each partition
 	partitions := PartitionMap(data, client.MaxKVArgs)
 	for _, p := range partitions {
 		kvArray := make([]models.TealKeyValue, 0, client.MaxKVArgs)
@@ -238,6 +238,32 @@ func (ab *AlgorandBuffer) PutElementsBlocking(data map[string]string, ctx contex
 			kvArray = append(kvArray, tkv)
 		}
 		err := ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ab *AlgorandBuffer) DeleteElementsBlocking(ctx context.Context, keys ...string) error {
+	for _, k := range keys {
+		if len(k) > 128 {
+			return errors.New("key can't exceed 128 bytes")
+		}
+	}
+	delArray := make([]string, 0)
+	for _, k := range keys {
+		if len(delArray) == client.MaxArgs {
+			err := ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
+			if err != nil {
+				return err
+			}
+			delArray = make([]string, 0)
+		}
+		delArray = append(delArray, k)
+	}
+	if len(delArray) > 0 {
+		err := ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
 		if err != nil {
 			return err
 		}
@@ -294,6 +320,22 @@ func (ab *AlgorandBuffer) ContainsWithin(m map[string]string, t time.Duration, p
 		time.Sleep(pollingInterval)
 	}
 	return false
+}
+
+// Contains returns true if the AlgorandBuffer contains the given data. Returns
+// an error if the request to the Algorand node failed.
+func (ab *AlgorandBuffer) Contains(ctx context.Context, m map[string]string) (bool, error) {
+	if len(m) > client.GlobalBytes {
+		return false, nil
+	}
+	data, err := ab.GetBuffer(ctx)
+	if err != nil {
+		return false, err
+	}
+	if mapContainsMap(data, m) {
+		return true, nil
+	}
+	return false, nil
 }
 
 // SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage

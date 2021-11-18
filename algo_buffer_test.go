@@ -4,7 +4,6 @@ package siam
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -222,7 +221,7 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	data := map[string]string{
 		"2654658": "Astralis",
 	}
-	err := buffer.PutElementsBlocking(data, context.Background())
+	err := buffer.PutElementsBlocking(context.Background(), data)
 	assert.Nil(t, err)
 
 	// confirm buffer size
@@ -238,7 +237,7 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	data := map[string]string{
 		"key": strings.Repeat("x", 128),
 	}
-	err := buffer.PutElementsBlocking(data, context.Background())
+	err := buffer.PutElementsBlocking(context.Background(), data)
 	assert.NotNil(t, err)
 	// confirm buffer size
 	d, err := buffer.GetBuffer(context.Background())
@@ -254,10 +253,10 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = ""
 	}
-	err := buffer.PutElementsBlocking(data, context.Background())
+	err := buffer.PutElementsBlocking(context.Background(), data)
 	assert.Nil(t, err)
 
-	err = buffer.PutElementsBlocking(map[string]string{"x": "y"}, context.Background())
+	err = buffer.PutElementsBlocking(context.Background(), map[string]string{"x": "y"})
 	assert.Nil(t, err)
 
 	// confirm buffer size
@@ -267,22 +266,23 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	assert.False(t, exists, "buffer should not have 'x' element")
 }
 
-func TestAlgorandBuffer_ContainsWithin(t *testing.T) {
+func TestAlgorandBuffer_Contains(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
 	// store in buffer
 	data := map[string]string{
 		"x": "y",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second*2)
+	err := buffer.PutElementsBlocking(context.Background(), data)
 	assert.Nil(t, err)
-	// Contains should return true, because x is inside the buffer
-	assert.True(t, buffer.ContainsWithin(map[string]string{"x": "y"}, time.Second, 0))
-	// Contains should return false on an empty map
-	assert.False(t, buffer.ContainsWithin(map[string]string{}, time.Second, 0))
-	cancel()
-	wg.Wait()
+
+	b, err := buffer.Contains(context.Background(), map[string]string{"x": "y"})
+	assert.True(t, b)
+	assert.Nil(t, err)
+
+	b, err = buffer.Contains(context.Background(), map[string]string{})
+	assert.False(t, b)
+	assert.Nil(t, err)
 }
 
 func TestAlgorandBuffer_DeleteElements(t *testing.T) {
@@ -296,63 +296,17 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 		"1002": "Gambit",
 		"1003": "OG",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second)
+	err := buffer.PutElementsBlocking(context.Background(), data)
 	assert.Nil(t, err)
 
-	err = buffer.DeleteElements("1001")
+	err = buffer.DeleteElementsBlocking(context.Background(), "1001")
 	assert.Nil(t, err)
+
 	d, _ := buffer.GetBuffer(context.Background())
-	fmt.Println(len(d))
-	// We expect 3 items
-	assert.Nil(t, bufferLengthWithin(buffer, 3, time.Second*5))
+	assert.EqualValues(t, len(d), 3)
 
 	// Make sure that key=1001 doesn't exist
 	b, err := buffer.GetBuffer(context.Background())
 	_, ok := b["1001"]
 	assert.False(t, ok)
-
-	cancel()
-	wg.Wait()
-}
-
-// Assuming we provide >16 delete arguments AND afterwards immediately provide
-// >16 store arguments, test that the Manage routine executes ALL delete arguments
-// first, before ever executing the store arguments
-func TestAlgorandBuffer_DeletePriority(t *testing.T) {
-	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
-
-	// Fill Buffer first
-	data := make(map[string]string, client.GlobalBytes)
-	for i := 0; i < client.GlobalBytes; i++ {
-		data[strconv.Itoa(i)] = ""
-	}
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-	err := putElementsAndWait(buffer, data, time.Second)
-	assert.Nil(t, err)
-
-	// Now create delete args and store args
-	del := make([]string, 2*client.MaxArgs)
-	for i := 0; i < client.MaxArgs*2; i++ {
-		t := i % client.MaxArgs
-		del[i] = strconv.Itoa(t)
-	}
-
-	put := make(map[string]string, client.MaxArgs)
-	for i := 0; i < client.MaxArgs; i++ {
-		put[strconv.Itoa(i)] = ""
-	}
-
-	// Put delete and store args
-	err = buffer.DeleteElements(del...)
-	assert.Nil(t, err)
-	err = buffer.PutElements(put)
-	assert.Nil(t, err)
-
-	// We expect full buffer
-	assert.Nil(t, bufferLengthWithin(buffer, client.GlobalBytes, time.Second*1))
-
-	cancel()
-	wg.Wait()
 }
