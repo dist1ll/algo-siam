@@ -17,8 +17,8 @@ go get github.com/m2q/algo-siam
 
 The library needs three things in order to work:
 
-* URL of an algod endpoint (e.g. )
-* API token for the endpoint (e.g. for sandbox node)
+* URL of an algod endpoint
+* API token for the endpoint
 * The base64-encoded private key of an account with sufficient funds. Note that any existing applications **will be
   deleted**. It is recommended to create a new account just for this purpose.
 
