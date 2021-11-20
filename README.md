@@ -71,6 +71,7 @@ contains, err := buffer.Contains(context.Background(), data)
 
 ### Writing Data
 
+To write data to the global state, simply write:
 ```go
 data := map[string]string{
     "match_256846": "Astralis",
@@ -79,18 +80,25 @@ data := map[string]string{
 }
 
 err = buffer.PutElements(context.Background(), data)
+if err != nil { 
+    // data was not written
+}
 ```
-Now the goroutine will write this data to the Siam app. If no error is returned, the data was successfully written to the blockchain. If you want to *update* existing data, you can just use the same method. 
+If no error is returned, the data was successfully written to the blockchain. If you want 
+to *update* existing data, you can just use the same method. 
 
 ### Deleting Data
 
-Once you've confirmed that data exists on the Siam application, you can safely call `DeleteElements`
+To delete keys from the global state, call `DeleteElements`
 
 ```go
 // delete two matches
 err = buffer.DeleteElements(context.Background(), "match_256846", "match_256847")
 ```
 
+If `err == nil`, the data was deleted. Note that this method will *not* return an error if you 
+supply keys that don't exist. The transaction will still be published, it just won't change the 
+global state.  
 ## Existing Oracle Apps
 
 An example usage can be found here
