@@ -62,22 +62,6 @@ type AlgorandBuffer struct {
 	logger     *log.Logger
 }
 
-type ManageConfig struct {
-	// SleepTime is the minimum amount of time the Manage routine will sleep aften
-	// failing to execute a blockchain action
-	SleepTime time.Duration
-	// HealthCheckInterval determines the interval between node and application
-	// health checks.
-	HealthCheckInterval time.Duration
-}
-
-func GetDefaultManageConfig() *ManageConfig {
-	return &ManageConfig{
-		SleepTime:           client.AlgorandDefaultMinSleep,
-		HealthCheckInterval: time.Second,
-	}
-}
-
 // CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment variables.
 // The environment variables contain configuration to connect to an Algorand node.
 // You can find explanations in the README. Alternatively, check out the implementation
@@ -214,9 +198,9 @@ func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, err
 	return m, nil
 }
 
-// PutElementsBlocking stores given key-value pairs. Existing keys will be overridden,
+// PutElements stores given key-value pairs. Existing keys will be overridden,
 // non-existing keys will be created.
-func (ab *AlgorandBuffer) PutElementsBlocking(ctx context.Context, data map[string]string) error {
+func (ab *AlgorandBuffer) PutElements(ctx context.Context, data map[string]string) error {
 	for k, v := range data {
 		if len(k)+len(v) > 128 {
 			return errors.New("kv pair cannot exceed 128 bytes")
@@ -239,7 +223,7 @@ func (ab *AlgorandBuffer) PutElementsBlocking(ctx context.Context, data map[stri
 	return nil
 }
 
-func (ab *AlgorandBuffer) DeleteElementsBlocking(ctx context.Context, keys ...string) error {
+func (ab *AlgorandBuffer) DeleteElements(ctx context.Context, keys ...string) error {
 	for _, k := range keys {
 		if len(k) > 128 {
 			return errors.New("key can't exceed 128 bytes")
@@ -261,34 +245,6 @@ func (ab *AlgorandBuffer) DeleteElementsBlocking(ctx context.Context, keys ...st
 		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// PutElements stores given key-value pairs. Existing keys will be overridden,
-// non-existing keys will be created.
-func (ab *AlgorandBuffer) PutElements(data map[string]string) error {
-	for k, v := range data {
-		if len(k)+len(v) > 128 {
-			return errors.New("kv pair cannot exceed 128 bytes")
-		}
-	}
-	for k, v := range data {
-		ab.storeArguments <- models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: v}}
-	}
-	return nil
-}
-
-// DeleteElements removes given keys from the buffer. If a key is supplied that
-// doesn't exist, nothing happens.
-func (ab *AlgorandBuffer) DeleteElements(keys ...string) error {
-	for _, k := range keys {
-		if len(k) > 128 {
-			return errors.New("key can't exceed 128 bytes")
-		}
-	}
-	for _, k := range keys {
-		ab.deleteArguments <- k
 	}
 	return nil
 }

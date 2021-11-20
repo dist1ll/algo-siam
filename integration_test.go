@@ -116,7 +116,7 @@ func TestSmartContract_PushData(t *testing.T) {
 		"1000": "Astralis",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	err = buffer.PutElementsBlocking(ctx, data)
+	err = buffer.PutElements(ctx, data)
 	cancel()
 	assert.Nil(t, err)
 }
@@ -134,7 +134,7 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 		"1002": "Gambit",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	err = buffer.PutElementsBlocking(ctx, data)
+	err = buffer.PutElements(ctx, data)
 	cancel()
 	assert.Nil(t, err)
 }
@@ -155,13 +155,13 @@ func TestSmartContract_DeleteData(t *testing.T) {
 		"1005": "Furia",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	err = buffer.PutElementsBlocking(ctx, data)
+	err = buffer.PutElements(ctx, data)
 	cancel()
 	assert.Nil(t, err)
 
 	// Delete
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*30)
-	err = buffer.DeleteElementsBlocking(ctx, "1001", "1003")
+	err = buffer.DeleteElements(ctx, "1001", "1003")
 	cancel()
 	assert.Nil(t, err)
 
@@ -180,13 +180,13 @@ func TestSmartContract_UpdateData(t *testing.T) {
 		"1002": "Gambit",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	err = buffer.PutElementsBlocking(ctx, data)
+	err = buffer.PutElements(ctx, data)
 	cancel()
 	assert.Nil(t, err)
 
 	// Modify and insert data
 	data["1000"] = "G2"
-	err = buffer.PutElementsBlocking(context.Background(), data)
+	err = buffer.PutElements(context.Background(), data)
 	assert.Nil(t, err)
 
 	c, err := buffer.Contains(context.Background(), data)
@@ -205,7 +205,7 @@ func TestSmartContract_PutManyData(t *testing.T) {
 		data[strconv.Itoa(i)] = "Winner"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	err = buffer.PutElementsBlocking(ctx, data)
+	err = buffer.PutElements(ctx, data)
 	cancel()
 	assert.Nil(t, err)
 
@@ -220,6 +220,6 @@ func TestSmartContract_PutManyData(t *testing.T) {
 	for i := 0; i < 32; i++ {
 		data[strconv.Itoa(i)] = "Loser"
 	}
-	err = buffer.PutElementsBlocking(context.Background(), data)
+	err = buffer.PutElements(context.Background(), data)
 	assert.Nil(t, err)
 }

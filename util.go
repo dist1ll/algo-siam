@@ -2,7 +2,6 @@ package siam
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -51,19 +50,6 @@ func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
 	assert.Equal(t, 0, len(info.CreatedApps))
 
 	return buffer
-}
-
-// putElementsAndWait fills a buffer with data and waits for the data to be written
-// to the AlgorandBuffer, until a given timeout t. This is a blocking call.
-func putElementsAndWait(a *AlgorandBuffer, m map[string]string, t time.Duration) error {
-	err := a.PutElements(m)
-	if err != nil {
-		return err
-	}
-	if a.ContainsWithin(m, t, time.Millisecond*50) {
-		return nil
-	}
-	return errors.New("data wasn't added in time")
 }
 
 // mapContainsMap returns true if every element of a map 'sub' is contained in

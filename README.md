@@ -50,34 +50,24 @@ buffer, err := siam.CreateAlgorandBuffer(c, base64key, nil)
 
 This will create a new Siam application (or detect an existing one). If the endpoint is unreachable, the token is incorrect, or the account has not enough funds to cover transactions, an error will be returned.
 
-The last step is to create a managing goroutine. This routine takes care of updating your data asynchronously.
-
-```go
-wg, cancel := buffer.SpawnManagingRoutine(&siam.ManageConfig{
-	SleepTime:           time.Second * 20, // time to sleep after failing to connect to node
-	HealthCheckInterval: time.Minute,      // how much time between mandatory node health checks
-})
-
-// your code
-
-wg.Wait()
-```
-Here you can configure how frequently the `AlgorandBuffer` should talk to the node. The method returns a cancel function, which you can use to terminate the goroutine. You can then use `wg.Wait()` to wait for the goroutine to terminate. 
-
 ## Writing, Deleting and Inspecting Data
 
-Now that you have a working `AlgorandBuffer`, you can start fetching, storing and deleting data. 
-This is done asynchronously.
+Now that you have a working `AlgorandBuffer`, you can start fetching, storing and deleting data. All
+calls receive a context object, which you can use to set timeouts or cancel requests. 
 
 ### Inspecting Data
 To fetch the actual data that currently lives on the blockchain, you can use `GetBuffer`
 ```go
-ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
-data, err := buffer.GetBuffer(ctx)  //returns map[string]string of key-value store
+data, err := buffer.GetBuffer(context.Background())  //returns map[string]string of key-value store
 ```
 
 At the moment, `data` will be an empty map. `GetBuffer` returns the actual data stored in the Algorand
-application. You can use it to check if your data has been written to the blockchain.
+application. You can use it to check if what data has been written to the blockchain. There's also a 
+convenience function:
+
+```go
+contains, err := buffer.Contains(context.Background(), data)
+``` 
 
 ### Writing Data
 
@@ -88,23 +78,9 @@ data := map[string]string{
     "match_256849": "Gambit",
 }
 
-err = buffer.PutElements(data)
+err = buffer.PutElements(context.Background(), data)
 ```
-Now the goroutine will write this data to the Siam app. You should see a result soon. 
-If you want to wait for the data to be submitted, use
-
-```go
-buffer.WaitForFlush()
-```
-
-You can assert that the data was successfully written to by running
-
-```go
-correct := buffer.ContainsWithin(data, time.Minute, time.Second)
-if correct {
-    fmt.Println("data was correctly inserted")
-}
-```
+Now the goroutine will write this data to the Siam app. If no error is returned, the data was successfully written to the blockchain. If you want to *update* existing data, you can just use the same method. 
 
 ### Deleting Data
 
@@ -112,14 +88,14 @@ Once you've confirmed that data exists on the Siam application, you can safely c
 
 ```go
 // delete two matches
-err = buffer.DeleteElements("match_256846", "match_256847")
-buffer.WaitForFlush()
+err = buffer.DeleteElements(context.Background(), "match_256846", "match_256847")
 ```
 
-## Example
 ## Existing Oracle Apps
 
-TODO
+An example usage can be found here
+
+* (siam-cs)[https://www.github.com/m2q/siam-cs]
 
 ## License
 

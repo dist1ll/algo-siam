@@ -142,7 +142,7 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 	data := map[string]string{
 		"2654658": "Astralis",
 	}
-	err := buffer.PutElementsBlocking(context.Background(), data)
+	err := buffer.PutElements(context.Background(), data)
 	assert.Nil(t, err)
 
 	// confirm buffer size
@@ -158,7 +158,7 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	data := map[string]string{
 		"key": strings.Repeat("x", 128),
 	}
-	err := buffer.PutElementsBlocking(context.Background(), data)
+	err := buffer.PutElements(context.Background(), data)
 	assert.NotNil(t, err)
 	// confirm buffer size
 	d, err := buffer.GetBuffer(context.Background())
@@ -174,10 +174,10 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = ""
 	}
-	err := buffer.PutElementsBlocking(context.Background(), data)
+	err := buffer.PutElements(context.Background(), data)
 	assert.Nil(t, err)
 
-	err = buffer.PutElementsBlocking(context.Background(), map[string]string{"x": "y"})
+	err = buffer.PutElements(context.Background(), map[string]string{"x": "y"})
 	assert.Nil(t, err)
 
 	// confirm buffer size
@@ -195,7 +195,7 @@ func TestAlgorandBuffer_Contains(t *testing.T) {
 	data := map[string]string{
 		"x": "y",
 	}
-	err := buffer.PutElementsBlocking(context.Background(), data)
+	err := buffer.PutElements(context.Background(), data)
 	assert.Nil(t, err)
 
 	b, err := buffer.Contains(context.Background(), map[string]string{"x": "y"})
@@ -218,10 +218,10 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 		"1002": "Gambit",
 		"1003": "OG",
 	}
-	err := buffer.PutElementsBlocking(context.Background(), data)
+	err := buffer.PutElements(context.Background(), data)
 	assert.Nil(t, err)
 
-	err = buffer.DeleteElementsBlocking(context.Background(), "1001")
+	err = buffer.DeleteElements(context.Background(), "1001")
 	assert.Nil(t, err)
 
 	d, _ := buffer.GetBuffer(context.Background())
