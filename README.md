@@ -45,7 +45,7 @@ If you want to supply the configuration arguments manually, you can do so with t
 
 ```go
 c := client.CreateAlgorandClientMock(URL, token)
-buffer, err := siam.CreateAlgorandBuffer(c, base64key, nil)
+buffer, err := siam.CreateAlgorandBuffer(c, base64key)
 ```
 
 This will create a new Siam application (or detect an existing one). If the endpoint is unreachable, the token is incorrect, or the account has not enough funds to cover transactions, an error will be returned.
