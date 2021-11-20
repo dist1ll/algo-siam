@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"math"
 	"time"
 
@@ -56,10 +54,6 @@ type AlgorandBuffer struct {
 	// timeoutLength is the default duration for Client requests like
 	// Health() or Status() to timeout.
 	timeoutLength time.Duration
-
-	// logWrapper is used to enable or disable logs
-	logWrapper *LogWrapper
-	logger     *log.Logger
 }
 
 // CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment variables.
@@ -70,7 +64,7 @@ type AlgorandBuffer struct {
 //
 // This method uses the client.CreateAlgorandClientWrapper implementation. If you want to
 // use your own implementation of client.AlgorandClient, use CreateAlgorandBuffer instead.
-func CreateAlgorandBufferFromEnv(logger *log.Logger) (*AlgorandBuffer, error) {
+func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	if !client.HasEnvironmentVars() {
 		return nil, errors.New("configuration variables are not set. See README")
 	}
@@ -79,20 +73,14 @@ func CreateAlgorandBufferFromEnv(logger *log.Logger) (*AlgorandBuffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return CreateAlgorandBuffer(a, base64key, logger)
+	return CreateAlgorandBuffer(a, base64key)
 }
 
 // CreateAlgorandBuffer creates a new instance of AlgorandBuffer. The buffer requires an
 // client.AlgorandClient to perform persistence and setup operations on the Algorand blockchain.
 // base64key is the base64-encoded private key of the 'target account'. The target account
 // creates and maintains the applications state on the blockchain.
-func CreateAlgorandBuffer(c client.AlgorandClient, b64key string, logger *log.Logger) (*AlgorandBuffer, error) {
-	if logger == nil {
-		logger = log.New(ioutil.Discard, "", 0)
-	}
-	wrapper := NewLogWrapper(logger.Writer())
-	logger.SetOutput(wrapper)
-
+func CreateAlgorandBuffer(c client.AlgorandClient, b64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(b64key)
 	if err != nil {
@@ -110,8 +98,6 @@ func CreateAlgorandBuffer(c client.AlgorandClient, b64key string, logger *log.Lo
 		deleteArguments: make(chan string, 64),
 		storeArguments:  make(chan models.TealKeyValue, 64),
 		timeoutLength:   client.AlgorandDefaultTimeout,
-		logger:          logger,
-		logWrapper:      wrapper,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
@@ -120,7 +106,6 @@ func CreateAlgorandBuffer(c client.AlgorandClient, b64key string, logger *log.Lo
 	if err != nil {
 		return buffer, err
 	}
-	logger.Println("API endpoint and Algorand dApp ready.")
 	return buffer, err
 }
 
@@ -190,6 +175,7 @@ func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, err
 	}
 
 	m := make(map[string]string)
+
 	for _, kv := range app.Params.GlobalState {
 		decodedKey, _ := base64.StdEncoding.DecodeString(kv.Key)
 		decodedVal, _ := base64.StdEncoding.DecodeString(kv.Value.Bytes)
@@ -366,12 +352,4 @@ func (ab *AlgorandBuffer) checkConnection() error {
 		return fmt.Errorf("failed on verifying token. bad token or URL has trailing slash. %s", err)
 	}
 	return err
-}
-
-func (ab *AlgorandBuffer) EnableLogger() {
-	ab.logWrapper.Enable()
-}
-
-func (ab *AlgorandBuffer) DisableLogger() {
-	ab.logWrapper.Disable()
 }

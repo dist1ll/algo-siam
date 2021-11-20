@@ -38,7 +38,7 @@ To write and delete data, you need to create an `siam.AlgorandBuffer`. If you co
 you can create an AlgorandBuffer with one line:
 
 ```go
-buffer, err := siam.CreateAlgorandBufferFromEnv(nil)
+buffer, err := siam.CreateAlgorandBufferFromEnv()
 ```
 
 If you want to supply the configuration arguments manually, you can do so with the following snippet

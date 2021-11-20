@@ -15,7 +15,7 @@ import (
 // If HealthCheck and token verification works, expect no errors
 func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err != nil {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
@@ -25,7 +25,7 @@ func TestAlgorandBuffer_HealthAndTokenPass(t *testing.T) {
 func TestAlgorandBuffer_NoHealth(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.SetError(true, (*client.AlgorandMock).HealthCheck)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err == nil {
 		t.Errorf("failing health check doesn't return error %s", err)
 	}
@@ -37,7 +37,7 @@ func TestAlgorandBuffer_NoHealth(t *testing.T) {
 func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.SetError(true, (*client.AlgorandMock).Status)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err == nil {
 		t.Errorf("failing token verification doesn't return error %s", err)
 	}
@@ -50,7 +50,7 @@ func TestAlgorandBuffer_IncorrectToken(t *testing.T) {
 func TestAlgorandBuffer_CorrectBufferWhenValid(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	c.CreateDummyApps(6)
-	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestAlgorandBuffer_DeletionError(t *testing.T) {
 	c.CreateDummyApps(6, 18, 32)
 	c.SetError(true, (*client.AlgorandMock).DeleteApplication)
 
-	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	if err == nil {
 		t.Fatalf("blocking deleteApp doesn't return error.")
 	}
@@ -80,7 +80,7 @@ func TestAlgorandBuffer_DeleteAppsWhenTooMany(t *testing.T) {
 
 	// Check if client is made valid.
 	assert.False(t, client.ValidAccount(c.Account))
-	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	_, err := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	assert.True(t, client.ValidAccount(c.Account))
 
 	assert.Nil(t, err)
@@ -96,7 +96,7 @@ func TestAlgorandBuffer_DeletePartial(t *testing.T) {
 
 	// Check if client is made valid.
 	assert.False(t, client.ValidAccount(c.Account))
-	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
@@ -111,7 +111,7 @@ func TestAlgorandBuffer_DeleteNewest(t *testing.T) {
 
 	// Check if client is made valid.
 	assert.False(t, client.ValidAccount(c.Account))
-	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	assert.True(t, client.ValidAccount(c.Account))
 
 	// Check if remaining app is the one that was created first
@@ -122,13 +122,13 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 
 	assert.False(t, client.ValidAccount(c.Account))
-	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	_, _ = CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
 func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	data, err := buffer.GetBuffer(context.Background())
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
@@ -137,7 +137,7 @@ func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 
 func TestAlgorandBuffer_PutElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	// store in buffer
 	data := map[string]string{
 		"2654658": "Astralis",
@@ -153,7 +153,7 @@ func TestAlgorandBuffer_PutElements(t *testing.T) {
 
 func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	// store kv pair that exceeds 128 byte
 	data := map[string]string{
 		"key": strings.Repeat("x", 128),
@@ -168,7 +168,7 @@ func TestAlgorandBuffer_PutElementsTooBig(t *testing.T) {
 
 func TestAlgorandBuffer_TooMany(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 	// Put Maximum Data
 	data := make(map[string]string, client.GlobalBytes)
 	for i := 0; i < client.GlobalBytes; i++ {
@@ -189,7 +189,7 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 
 func TestAlgorandBuffer_Contains(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
 	// store in buffer
 	data := map[string]string{
@@ -209,7 +209,7 @@ func TestAlgorandBuffer_Contains(t *testing.T) {
 
 func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
 
 	// store in buffer
 	data := map[string]string{

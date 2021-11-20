@@ -25,7 +25,7 @@ func TestIntegration_RemoveAccount(t *testing.T) {
 }
 
 func TestIntegration_ValidAccount(t *testing.T) {
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), client.AlgorandDefaultTimeout)
@@ -39,7 +39,7 @@ func TestIntegration_ValidAccount(t *testing.T) {
 // Check if smart contract only allows deletion from an creator acc.
 func TestSmartContract_DeleteWrongAcc(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Random Account deleting app should throw error
@@ -56,7 +56,7 @@ func TestSmartContract_DeleteWrongAcc(t *testing.T) {
 // by the smart contract
 func TestSmartContract_GenerateTransaction(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Get Parameters
@@ -78,7 +78,7 @@ func TestSmartContract_GenerateTransaction(t *testing.T) {
 // Update.
 func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// OnCompletion Teal ops that should be rejected
@@ -108,7 +108,7 @@ func TestSmartContract_RejectNonSupportedOps(t *testing.T) {
 // Push one data point
 func TestSmartContract_PushData(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Fill with data
@@ -124,7 +124,7 @@ func TestSmartContract_PushData(t *testing.T) {
 // Push multiple data points
 func TestSmartContract_PushDataMultiple(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Fill with data
@@ -142,7 +142,7 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 // Push data and subsequently delete several entries
 func TestSmartContract_DeleteData(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Fill
@@ -170,7 +170,7 @@ func TestSmartContract_DeleteData(t *testing.T) {
 
 func TestSmartContract_UpdateData(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Fill
@@ -196,7 +196,7 @@ func TestSmartContract_UpdateData(t *testing.T) {
 
 func TestSmartContract_PutManyData(t *testing.T) {
 	_ = createBufferAndRemoveApps(t)
-	buffer, err := CreateAlgorandBufferFromEnv(nil)
+	buffer, err := CreateAlgorandBufferFromEnv()
 	assert.Nil(t, err)
 
 	// Fill
