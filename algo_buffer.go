@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
@@ -18,11 +17,6 @@ import (
 
 	"github.com/algorand/go-algorand-sdk/crypto"
 )
-
-const ApprovalProg = "#pragma version 4\n" +
-	"addr Sender\n" +
-	"addr CreatorAddress\n" +
-	"=="
 
 // AlgorandBuffer implements the Buffer interface. The underlying storage mechanism is
 // the Algorand blockchain. To create an AlgorandBuffer you can use the methods
@@ -336,112 +330,6 @@ func (ab *AlgorandBuffer) Contains(ctx context.Context, m map[string]string) (bo
 		return true, nil
 	}
 	return false, nil
-}
-
-// SpawnManagingRoutine spawns a goroutine that manages an AlgorandBuffer via Manage
-// and cancel function to signal termination, and a WaitGroup to wait for the cancellation
-// to be completed.
-func (ab *AlgorandBuffer) SpawnManagingRoutine(cfg *ManageConfig) (*sync.WaitGroup, context.CancelFunc) {
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ab.logger.Println("managing routine started")
-		ab.Manage(ctx, cfg)
-		ab.logger.Println("managing routine exited")
-	}()
-	return &wg, cancel
-}
-
-// TODO: Consider switching from WG+CancelFunc to representing this
-
-// Manage is a constantly running routine that manages the lifecycle of the
-// AlgorandBuffer. It performs continuous checks against the node, smart
-// contract, application state and funding amount. Manage takes care of
-// asynchronous buffer writes, by queueing and writing them when the node
-// is available.
-//
-// The config parameter describes the behavior of the Manage routine, which
-// include sleep time after unsuccessful node calls.
-func (ab *AlgorandBuffer) Manage(ctx context.Context, config *ManageConfig) {
-	if config == nil {
-		config = GetDefaultManageConfig()
-	}
-	// ALL proposed keys to be deleted
-	delArray := make([]string, 0, 1000)
-	// ALL proposed key-value pairs for application
-	kvArray := make([]models.TealKeyValue, 0, 1000)
-
-	for ctx.Err() == nil {
-		err := ab.ensureRemoteValid(ctx)
-		if err != nil {
-			ab.logger.Printf("couldn't reach endpoint: %s", err)
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(config.SleepTime):
-				continue
-			}
-		}
-		// If no arguments, wait for arguments (or until a health check
-		// needs to be made)
-		if len(kvArray) == 0 && len(delArray) == 0 {
-			select {
-			case <-ctx.Done():
-				return
-			case del := <-ab.deleteArguments:
-				delArray = append(delArray, del)
-			case kv := <-ab.storeArguments:
-				kvArray = append(kvArray, kv)
-			case <-time.After(config.HealthCheckInterval):
-				continue
-			}
-		}
-
-		// unwrap the rest of the delete args
-		for len(ab.deleteArguments) > 0 && len(delArray) < client.MaxArgs {
-			delArray = append(delArray, <-ab.deleteArguments)
-		}
-		// unwrap the rest of the store args
-		for len(ab.storeArguments) > 0 && len(kvArray) < client.MaxKVArgs {
-			kvArray = append(kvArray, <-ab.storeArguments)
-		}
-
-		// attempt to delete data
-		if len(delArray) > 0 {
-			err = ab.Client.DeleteGlobals(ab.AccountCrypt, ab.AppId, delArray...)
-			if err != nil {
-				ab.logger.Printf("failed deleting globals: %s", err)
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(config.SleepTime):
-					continue
-				}
-			}
-			// if successful, reset delArray
-			delArray = make([]string, 0, 1000)
-			// always make sure that ALL delete requests are processed before store
-			continue
-		}
-
-		// attempt to store data
-		if len(kvArray) > 0 {
-			err = ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
-			if err != nil {
-				ab.logger.Printf("failed storing globals: %s", err)
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(config.SleepTime):
-					continue
-				}
-			}
-			// if successful, reset kvArray
-			kvArray = make([]models.TealKeyValue, 0, 1000)
-		}
-	}
 }
 
 // manageCreation creates an Algorand application for the target account.

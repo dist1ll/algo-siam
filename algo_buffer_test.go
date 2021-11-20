@@ -4,15 +4,12 @@ package siam
 
 import (
 	"context"
-	"strconv"
-	"strings"
-	"sync"
-	"testing"
-	"time"
-
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/m2q/algo-siam/client"
 	"github.com/stretchr/testify/assert"
+	"strconv"
+	"strings"
+	"testing"
 )
 
 // If HealthCheck and token verification works, expect no errors
@@ -129,82 +126,6 @@ func TestAlgorandBuffer_Creation(t *testing.T) {
 	assert.True(t, client.ValidAccount(c.Account))
 }
 
-// Check if Manage() goroutine quits, when we cancel the provided context
-// Whenever the Manage() routine receives errors from the node or application,
-// it may fall asleep for a certain amount of time (to not ddos a server that
-// might have some problems).
-// The *_ManageQuits* tests make sure that the cancel() call is respected in
-// every situation.
-func TestAlgorandBuffer_ManageQuits(t *testing.T) {
-	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
-
-	c.SetError(true, (*client.AlgorandMock).HealthCheck)
-
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		buffer.Manage(ctx, &ManageConfig{SleepTime: time.Minute})
-	}()
-
-	time.Sleep(time.Millisecond * 10)
-
-	cancel()
-
-	if waitTimeout(&wg, time.Millisecond*100) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
-}
-
-// Check if Manage() goroutine respects cancel, when no arguments are put
-// into the buffer, and the health check times are very long.
-func TestAlgorandBuffer_ManageQuits2(t *testing.T) {
-	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
-
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		buffer.Manage(ctx, &ManageConfig{
-			SleepTime:           time.Minute,
-			HealthCheckInterval: time.Minute})
-	}()
-
-	time.Sleep(time.Millisecond * 10)
-	cancel()
-	if waitTimeout(&wg, time.Millisecond*100) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
-}
-
-// Test if buffer restores valid account state after adding an application
-// AFTER the buffer has been verified and initialized
-func TestAlgorandBuffer_AppAddedAfterSetup(t *testing.T) {
-	c := client.CreateAlgorandClientMock("", "")
-	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
-
-	// Add application after setup
-	c.AddDummyApps(56)
-	assert.False(t, client.ValidAccount(c.Account))
-
-	wg, cancel := buffer.SpawnManagingRoutine(&ManageConfig{})
-
-	// Manage routine should make account valid in less than a second
-	now := time.Now()
-	for !client.ValidAccount(c.Account) && time.Now().Sub(now) < time.Second {
-		time.Sleep(time.Millisecond)
-	}
-	assert.True(t, client.ValidAccount(c.Account))
-	cancel()
-	wg.Wait()
-}
-
 func TestAlgorandBuffer_GetBuffer(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
@@ -269,6 +190,7 @@ func TestAlgorandBuffer_TooMany(t *testing.T) {
 func TestAlgorandBuffer_Contains(t *testing.T) {
 	c := client.CreateAlgorandClientMock("", "")
 	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64(), nil)
+
 	// store in buffer
 	data := map[string]string{
 		"x": "y",

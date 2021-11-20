@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/m2q/algo-siam/client"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,23 +34,6 @@ func TestIntegration_ValidAccount(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(info.CreatedApps))
-}
-
-// Remove application, and see if Manage re-creates the application
-func TestIntegration_AccountGetsRestored(t *testing.T) {
-	buffer := createBufferAndRemoveApps(t)
-	wg, cancel := buffer.SpawnManagingRoutine(nil)
-
-	var info models.Account
-	for !client.ValidAccount(info) {
-		info, _ = buffer.Client.AccountInformation(buffer.AccountCrypt.Address.String(), context.Background())
-		time.Sleep(time.Second)
-	}
-
-	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
 }
 
 // Check if smart contract only allows deletion from an creator acc.
@@ -133,15 +115,10 @@ func TestSmartContract_PushData(t *testing.T) {
 	data := map[string]string{
 		"1000": "Astralis",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second*30)
-	assert.Nil(t, err)
-
-	// Make sure goroutine cancels in time
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	err = buffer.PutElementsBlocking(ctx, data)
 	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
+	assert.Nil(t, err)
 }
 
 // Push multiple data points
@@ -156,15 +133,10 @@ func TestSmartContract_PushDataMultiple(t *testing.T) {
 		"1001": "Vitality",
 		"1002": "Gambit",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second*30)
-	assert.Nil(t, err)
-
-	// Make sure goroutine cancels in time
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	err = buffer.PutElementsBlocking(ctx, data)
 	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
+	assert.Nil(t, err)
 }
 
 // Push data and subsequently delete several entries
@@ -182,21 +154,18 @@ func TestSmartContract_DeleteData(t *testing.T) {
 		"1004": "Na'Vi",
 		"1005": "Furia",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	err = buffer.PutElementsBlocking(ctx, data)
+	cancel()
 	assert.Nil(t, err)
 
 	// Delete
-	err = buffer.DeleteElements("1001", "1003")
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second*30)
+	err = buffer.DeleteElementsBlocking(ctx, "1001", "1003")
+	cancel()
 	assert.Nil(t, err)
 
 	assert.Nil(t, bufferLengthWithin(buffer, 4, time.Second*10))
-
-	// Make sure goroutine cancels in time
-	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
 }
 
 func TestSmartContract_UpdateData(t *testing.T) {
@@ -210,23 +179,19 @@ func TestSmartContract_UpdateData(t *testing.T) {
 		"1001": "Vitality",
 		"1002": "Gambit",
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	err = buffer.PutElementsBlocking(ctx, data)
+	cancel()
 	assert.Nil(t, err)
 
 	// Modify and insert data
 	data["1000"] = "G2"
-	err = buffer.PutElements(data)
+	err = buffer.PutElementsBlocking(context.Background(), data)
 	assert.Nil(t, err)
 
-	// Check if value was updated (until timeout)
-	assert.True(t, buffer.ContainsWithin(data, time.Second*2, time.Millisecond*50))
-
-	// Make sure goroutine cancels in time
-	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
+	c, err := buffer.Contains(context.Background(), data)
+	assert.Nil(t, err)
+	assert.True(t, c)
 }
 
 func TestSmartContract_PutManyData(t *testing.T) {
@@ -239,8 +204,9 @@ func TestSmartContract_PutManyData(t *testing.T) {
 	for i := 0; i < client.GlobalBytes; i++ {
 		data[strconv.Itoa(i)] = "Winner"
 	}
-	wg, cancel := buffer.SpawnManagingRoutine(nil)
-	err = putElementsAndWait(buffer, data, time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	err = buffer.PutElementsBlocking(ctx, data)
+	cancel()
 	assert.Nil(t, err)
 
 	d, err := buffer.GetBuffer(context.Background())
@@ -254,12 +220,6 @@ func TestSmartContract_PutManyData(t *testing.T) {
 	for i := 0; i < 32; i++ {
 		data[strconv.Itoa(i)] = "Loser"
 	}
-	err = putElementsAndWait(buffer, data, time.Second*30)
+	err = buffer.PutElementsBlocking(context.Background(), data)
 	assert.Nil(t, err)
-
-	// Make sure goroutine cancels in time
-	cancel()
-	if waitTimeout(wg, time.Second) {
-		t.Fatalf("goroutine didn't finish in time")
-	}
 }
