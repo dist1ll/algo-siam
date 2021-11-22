@@ -167,19 +167,30 @@ func (ab *AlgorandBuffer) Health() error {
 
 // GetBuffer returns the stored global state of this buffer's associated Algorand application.
 func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, error) {
+	b, err := ab.GetBufferRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[string]string, len(b))
+	for k, v := range b {
+		m[k] = string(v)
+	}
+	return m, nil
+}
+
+// GetBufferRaw returns the stored global state of this buffer's associated Algorand application.
+func (ab *AlgorandBuffer) GetBufferRaw(ctx context.Context) (map[string][]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, ab.timeoutLength)
 	app, err := ab.Client.GetApplicationByID(ab.AppId, ctx)
 	cancel()
 	if err != nil {
 		return nil, err
 	}
-
-	m := make(map[string]string)
-
+	m := make(map[string][]byte)
 	for _, kv := range app.Params.GlobalState {
 		decodedKey, _ := base64.StdEncoding.DecodeString(kv.Key)
 		decodedVal, _ := base64.StdEncoding.DecodeString(kv.Value.Bytes)
-		m[string(decodedKey)] = string(decodedVal)
+		m[string(decodedKey)] = decodedVal
 	}
 	return m, nil
 }
@@ -187,6 +198,17 @@ func (ab *AlgorandBuffer) GetBuffer(ctx context.Context) (map[string]string, err
 // PutElements stores given key-value pairs. Existing keys will be overridden,
 // non-existing keys will be created.
 func (ab *AlgorandBuffer) PutElements(ctx context.Context, data map[string]string) error {
+	m := make(map[string][]byte, len(data))
+	for k, v := range data {
+		m[k] = []byte(v)
+	}
+	err := ab.PutElementsRaw(ctx, m)
+	return err
+}
+
+// PutElementsRaw stores given key-value pairs, with []byte values. See PutElements for a
+// convenience function using string values
+func (ab *AlgorandBuffer) PutElementsRaw(ctx context.Context, data map[string][]byte) error {
 	for k, v := range data {
 		if len(k)+len(v) > 128 {
 			return errors.New("kv pair cannot exceed 128 bytes")
@@ -194,11 +216,11 @@ func (ab *AlgorandBuffer) PutElements(ctx context.Context, data map[string]strin
 	}
 	// if the number of kv pairs exceed client.MaxKVArgs, we need to split them up
 	// into partitions. One txn for each partition
-	partitions := partitionMap(data, client.MaxKVArgs)
+	partitions := partitionMapByte(data, client.MaxKVArgs)
 	for _, p := range partitions {
 		kvArray := make([]models.TealKeyValue, 0, client.MaxKVArgs)
 		for k, v := range p {
-			tkv := models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: v}}
+			tkv := models.TealKeyValue{Key: k, Value: models.TealValue{Bytes: string(v)}}
 			kvArray = append(kvArray, tkv)
 		}
 		err := ab.Client.StoreGlobals(ab.AccountCrypt, ab.AppId, kvArray)
