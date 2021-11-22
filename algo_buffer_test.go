@@ -232,3 +232,29 @@ func TestAlgorandBuffer_DeleteElements(t *testing.T) {
 	_, ok := b["1001"]
 	assert.False(t, ok)
 }
+
+func TestAlgorandBuffer_AchieveDesiredState(t *testing.T) {
+	c := client.CreateAlgorandClientMock("", "")
+	buffer, _ := CreateAlgorandBuffer(c, client.GeneratePrivateKey64())
+
+	// Put Maximum Data
+	data := make(map[string]string, client.GlobalBytes)
+	for i := 0; i < client.GlobalBytes; i++ {
+		data[strconv.Itoa(i)] = ""
+	}
+	assert.Nil(t, buffer.PutElements(context.Background(), data))
+	assert.Nil(t, buffer.AchieveDesiredState(context.Background(), map[string]string{}))
+
+	d, _ := buffer.GetBuffer(context.Background())
+	assert.EqualValues(t, 0, len(d))
+
+	// Same keys, different values
+	data = make(map[string]string, client.GlobalBytes)
+	for i := 0; i < client.GlobalBytes-1; i++ {
+		data[strconv.Itoa(i)] = "val"
+	}
+	assert.Nil(t, buffer.AchieveDesiredState(context.Background(), data))
+	d, _ = buffer.GetBuffer(context.Background())
+	assert.Equal(t, "val", d["0"])
+	assert.Equal(t, "", d[strconv.Itoa(client.GlobalBytes-1)])
+}

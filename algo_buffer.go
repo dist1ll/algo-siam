@@ -194,7 +194,7 @@ func (ab *AlgorandBuffer) PutElements(ctx context.Context, data map[string]strin
 	}
 	// if the number of kv pairs exceed client.MaxKVArgs, we need to split them up
 	// into partitions. One txn for each partition
-	partitions := PartitionMap(data, client.MaxKVArgs)
+	partitions := partitionMap(data, client.MaxKVArgs)
 	for _, p := range partitions {
 		kvArray := make([]models.TealKeyValue, 0, client.MaxKVArgs)
 		for k, v := range p {
@@ -272,6 +272,31 @@ func (ab *AlgorandBuffer) Contains(ctx context.Context, m map[string]string) (bo
 		return true, nil
 	}
 	return false, nil
+}
+
+// AchieveDesiredState turns the application state into a given `desired` state with the smallest
+// number of Put/Delete calls.
+func (ab *AlgorandBuffer) AchieveDesiredState(ctx context.Context, desired map[string]string) error {
+	data, err := ab.GetBuffer(ctx)
+	if err != nil {
+		return err
+	}
+	put, del := computeOverlap(desired, data)
+
+	// if no changes need to be made, application state is optimal
+	if len(put)+len(del) == 0 {
+		return nil
+	}
+
+	err = ab.DeleteElements(ctx, getKeys(del)...)
+	if err != nil {
+		return err
+	}
+	err = ab.PutElements(ctx, put)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // manageCreation creates an Algorand application for the target account.

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// PartitionMap partitions a given map into partitions with a given size.
-func PartitionMap(data map[string]string, size int) []map[string]string {
+// partitionMap partitions a given map into partitions with a given size.
+func partitionMap(data map[string]string, size int) []map[string]string {
 	if size >= len(data) {
 		return []map[string]string{data}
 	}
@@ -29,6 +29,39 @@ func PartitionMap(data map[string]string, size int) []map[string]string {
 		partitions = append(partitions, currentP)
 	}
 	return partitions
+}
+
+func getKeys(m map[string]string) []string {
+	s := make([]string, len(m))
+	i := 0
+	for k, _ := range m {
+		s[i] = k
+		i++
+	}
+	return s
+}
+
+// computeOverlap returns two maps, m1 and m2. m1 contains the map entries of x, for
+// which the keys either don't exist in y, or do exist but with different values than
+// in x. m2 contains map entries of y that don't exist in x.
+func computeOverlap(x, y map[string]string) (m1, m2 map[string]string) {
+	m1 = make(map[string]string)
+	m2 = make(map[string]string)
+
+	for k, v := range x {
+		yv, ok := y[k]
+		// if the key exists in both x and y, and they have the same value, exclude it.
+		if !(ok && v == yv) {
+			m1[k] = v
+		}
+	}
+	for k, v := range y {
+		// keys that exist in y, but not in x
+		if _, ok := x[k]; !ok {
+			m2[k] = v
+		}
+	}
+	return m1, m2
 }
 
 // Utility function that creates an AlgorandBuffer, and subsequently deletes the application
