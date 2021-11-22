@@ -85,7 +85,9 @@ if err != nil {
 }
 ```
 If no error is returned, the data was successfully written to the blockchain. If you want 
-to *update* existing data, you can just use the same method. 
+to *update* existing data, you can just use the same method. If you want to store raw `[]byte` data
+instead of strings, use `PutElementsRaw` and `GetBufferRaw` (which will 
+use `map[string][]byte` instead).
 
 ### Deleting Data
 
@@ -99,6 +101,7 @@ err = buffer.DeleteElements(context.Background(), "match_256846", "match_256847"
 If `err == nil`, the data was deleted. Note that this method will *not* return an error if you 
 supply keys that don't exist. The transaction will still be published, it just won't change the 
 global state.  
+
 ## Existing Oracle Apps
 
 An example usage can be found here
