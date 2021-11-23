@@ -18,7 +18,7 @@ import (
 
 // AlgorandBuffer implements the Buffer interface. The underlying storage mechanism is
 // the Algorand blockchain. To create an AlgorandBuffer you can use the methods
-// CreateAlgorandBuffer or CreateAlgorandBufferFromEnv.
+// NewAlgorandBuffer or NewAlgorandBufferFromEnv.
 //
 // In general you'll have to supply a URL that represents the endpoint of an Algorand node,
 // an API token for this node, and a base64 encoded private key of an account that will create
@@ -32,7 +32,7 @@ import (
 //   privKey := "z2BGxfLJ...1IWsvNKRFw8bLQUnK2nRa+YmLNvQCA=="
 //
 //   client, err := client.CreateAlgorandClientWrapper(url, token)
-//   buffer, err := CreateAlgorandBuffer(client, privKey)
+//   buffer, err := NewAlgorandBuffer(client, privKey)
 type AlgorandBuffer struct {
 	// AppId is the ID of Algorand application this buffer publishes to.
 	AppId uint64
@@ -64,15 +64,15 @@ func PrintNewAccount() {
 	fmt.Printf("Public Address: %s\nPrivate Key: %s\n", acc.Address.String(), pk)
 }
 
-// CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment variables.
+// NewAlgorandBufferFromEnv creates an AlgorandBuffer from environment variables.
 // The environment variables contain configuration to connect to an Algorand node.
 // You can find explanations in the README. Alternatively, check out the implementation
 // in client.GetAlgorandEnvironmentVars. You can pass your own logger to be used. If you
 // pass nil, no logging will occur.
 //
 // This method uses the client.CreateAlgorandClientWrapper implementation. If you want to
-// use your own implementation of client.AlgorandClient, use CreateAlgorandBuffer instead.
-func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
+// use your own implementation of client.AlgorandClient, use NewAlgorandBuffer instead.
+func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	if !client.HasEnvironmentVars() {
 		return nil, errors.New("configuration variables are not set. See README")
 	}
@@ -81,14 +81,14 @@ func CreateAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return CreateAlgorandBuffer(a, base64key)
+	return NewAlgorandBuffer(a, base64key)
 }
 
-// CreateAlgorandBuffer creates a new instance of AlgorandBuffer. The buffer requires an
+// NewAlgorandBuffer creates a new instance of AlgorandBuffer. The buffer requires an
 // client.AlgorandClient to perform persistence and setup operations on the Algorand blockchain.
 // base64key is the base64-encoded private key of the 'target account'. The target account
 // creates and maintains the applications state on the blockchain.
-func CreateAlgorandBuffer(c client.AlgorandClient, b64key string) (*AlgorandBuffer, error) {
+func NewAlgorandBuffer(c client.AlgorandClient, b64key string) (*AlgorandBuffer, error) {
 	// Decode Base64 private key
 	pk, err := base64.StdEncoding.DecodeString(b64key)
 	if err != nil {
@@ -120,7 +120,7 @@ func CreateAlgorandBuffer(c client.AlgorandClient, b64key string) (*AlgorandBuff
 // ensureRemoteValid ensures the node is healthy and the target account is in a valid
 // state. To achieve this, it will verify, create or delete applications and store the
 // updated results in the AlgorandBuffer. Call this when initializing the AlgorandBuffer
-// (see CreateAlgorandBuffer).
+// (see NewAlgorandBuffer).
 //
 // If the target account is valid and the node is healthy, this function does nothing.
 func (ab *AlgorandBuffer) ensureRemoteValid(ctx context.Context) error {

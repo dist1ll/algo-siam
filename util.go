@@ -87,7 +87,7 @@ func computeOverlap(x, y map[string]string) (m1, m2 map[string]string) {
 // Utility function that creates an AlgorandBuffer, and subsequently deletes the application
 // so that only one remains.
 func createBufferAndRemoveApps(t *testing.T) *AlgorandBuffer {
-	buffer, err := CreateAlgorandBufferFromEnv()
+	buffer, err := NewAlgorandBufferFromEnv()
 	if err != nil {
 		t.Fatal(err)
 	}
