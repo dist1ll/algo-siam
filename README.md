@@ -38,14 +38,14 @@ To write and delete data, you need to create an `siam.AlgorandBuffer`. If you co
 you can create an AlgorandBuffer with one line:
 
 ```go
-buffer, err := siam.CreateAlgorandBufferFromEnv()
+buffer, err := siam.NewAlgorandBufferFromEnv()
 ```
 
 If you want to supply the configuration arguments manually, you can do so with the following snippet
 
 ```go
 c := client.CreateAlgorandClientMock(URL, token)
-buffer, err := siam.CreateAlgorandBuffer(c, base64key)
+buffer, err := siam.NewAlgorandBuffer(c, base64key)
 ```
 
 This will create a new Siam application (or detect an existing one). If the endpoint is unreachable, the token is incorrect, or the account has not enough funds to cover transactions, an error will be returned.
