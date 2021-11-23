@@ -56,6 +56,14 @@ type AlgorandBuffer struct {
 	timeoutLength time.Duration
 }
 
+// PrintNewAccount will randomly generate a new account, and print the base64-encoded
+// private key, as well as the corresponding public Algorand address.
+func PrintNewAccount() {
+	acc := crypto.GenerateAccount()
+	pk := base64.StdEncoding.EncodeToString(acc.PrivateKey)
+	fmt.Printf("Public Address: %s\nPrivate Key: %s\n", acc.Address.String(), pk)
+}
+
 // CreateAlgorandBufferFromEnv creates an AlgorandBuffer from environment variables.
 // The environment variables contain configuration to connect to an Algorand node.
 // You can find explanations in the README. Alternatively, check out the implementation
