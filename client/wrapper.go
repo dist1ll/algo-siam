@@ -74,7 +74,7 @@ func (a *AlgorandClientWrapper) ExecuteTransaction(acc crypto.Account, txn types
 		return models.PendingTransactionInfoResponse{}, err
 	}
 
-	_, err = WaitForConfirmation(txID, a, 5, ctx)
+	_, err = future.WaitForConfirmation(a.Client, txID, 5, ctx)
 	if err != nil {
 		return models.PendingTransactionInfoResponse{}, err
 	}

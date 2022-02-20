@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/algorand/go-algorand-sdk/future"
 	"time"
@@ -132,38 +131,4 @@ func CompileProgram(client AlgorandClient, program []byte) (compiledProgram []by
 	}
 	compiledProgram, _ = base64.StdEncoding.DecodeString(compileResponse.Result)
 	return compiledProgram
-}
-
-// WaitForConfirmation waits for a given number of rounds (timeout) to check if the
-// transaction was successfully confirmed.
-func WaitForConfirmation(txID string, client AlgorandClient, timeout uint64, ctx context.Context) (models.PendingTransactionInfoResponse, error) {
-	pt := new(models.PendingTransactionInfoResponse)
-	if client == nil || txID == "" || timeout < 0 {
-		return *pt, errors.New("bad arguments for waitForConfirmation")
-	}
-
-	status, err := client.Status(ctx)
-	if err != nil {
-		return *pt, fmt.Errorf("error getting algod status: %s", err)
-	}
-
-	startRound := status.LastRound + 1
-	currentRound := startRound
-
-	for currentRound < (startRound + timeout) {
-		*pt, _, err = client.PendingTransactionInformation(txID, context.Background())
-		if err != nil {
-			return *pt, fmt.Errorf("error getting pending txn: %s", err)
-		}
-		if pt.ConfirmedRound > 0 {
-			return *pt, nil
-		}
-		if pt.PoolError != "" {
-			return *pt, errors.New("there was a pool error, then the transaction has been rejected")
-		}
-		fmt.Printf("waiting for confirmation\n")
-		status, err = client.StatusAfterBlock(currentRound, context.Background())
-		currentRound++
-	}
-	return *pt, errors.New("tx not found in round range")
 }
