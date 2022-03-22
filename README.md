@@ -21,6 +21,8 @@ The library needs three things in order to work:
 * API token for the endpoint
 * The base64-encoded private key of an account with sufficient funds. Note that any existing applications **will be
   deleted**. It is recommended to create a new account just for this purpose.
+* (optional) Instead of a token, you can also submit your own custom headers. This might be necessary if
+you're using the PureStake API.
 
 These can be supplied as environment variables:
 
@@ -29,7 +31,7 @@ These can be supplied as environment variables:
 | SIAM_URL_NODE      | `https://testnet.algoexplorerapi.io`       |
 | SIAM_ALGOD_TOKEN   | `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`        |
 | SIAM_PRIVATE_KEY | `z2BGxfLJhB67Rwm/FP9su+M9VnfZvJXGhpwghlujZcWFWZbaa0jgJ4eO1IWsvNKRFw8bLQUnK2nRa+YmLNvQCA==`
-
+| SIAM_HEADERS_NODE | `x-api-key:gkenaddAstdanep4MZ5YcjuwNYgB0ds6560`
 Alternatively, you can pass these values as arguments inside the code.
 
 ## Getting Started
@@ -44,7 +46,7 @@ buffer, err := siam.NewAlgorandBufferFromEnv()
 If you want to supply the configuration arguments manually, you can do so with the following snippet
 
 ```go
-c := client.CreateAlgorandClientMock(URL, token)
+c := client.CreateAlgorandClientWrapper(URL, token)
 buffer, err := siam.NewAlgorandBuffer(c, base64key)
 ```
 

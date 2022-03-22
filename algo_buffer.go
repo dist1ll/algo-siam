@@ -76,7 +76,14 @@ func NewAlgorandBufferFromEnv() (*AlgorandBuffer, error) {
 	if !client.HasEnvironmentVars() {
 		return nil, errors.New("configuration variables are not set. See README")
 	}
-	url, token, base64key := client.GetAlgorandEnvironmentVars()
+	url, token, base64key, headers := client.GetAlgorandEnvironmentVars()
+	if len(headers) != 0 {
+		a, err := client.NewClientWithHeaders(url, token, headers)
+		if err != nil {
+			return nil, err
+		}
+		return NewAlgorandBuffer(a, base64key)
+	}
 	a, err := client.CreateAlgorandClientWrapper(url, token)
 	if err != nil {
 		return nil, err

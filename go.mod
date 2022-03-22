@@ -3,7 +3,7 @@ module github.com/m2q/algo-siam
 go 1.17
 
 require (
-	github.com/algorand/go-algorand-sdk v1.12.0
+	github.com/algorand/go-algorand-sdk v1.13.0
 	github.com/stretchr/testify v1.7.0
 )
 

@@ -3,8 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
-
 	"github.com/algorand/go-algorand-sdk/client/v2/algod"
+	"github.com/algorand/go-algorand-sdk/client/v2/common"
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/future"
@@ -22,6 +22,12 @@ func CreateAlgorandClientWrapper(URL string, token string) (*AlgorandClientWrapp
 	return &AlgorandClientWrapper{Client: c}, err
 }
 
+// NewClientWithHeaders creates an algod client with a given set of headers. Use it if you're
+// connecting to Node providers that use custom header keys like PureStake
+func NewClientWithHeaders(URL string, token string, headers []*common.Header) (*AlgorandClientWrapper, error) {
+	c, err := algod.MakeClientWithHeaders(URL, token, headers)
+	return &AlgorandClientWrapper{Client: c}, err
+}
 func (a *AlgorandClientWrapper) SuggestedParams(ctx context.Context) (types.SuggestedParams, error) {
 	params, err := a.Client.SuggestedParams().Do(ctx)
 	if err == nil {
