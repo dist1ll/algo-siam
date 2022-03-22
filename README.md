@@ -32,6 +32,7 @@ These can be supplied as environment variables:
 | SIAM_ALGOD_TOKEN   | `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`        |
 | SIAM_PRIVATE_KEY | `z2BGxfLJhB67Rwm/FP9su+M9VnfZvJXGhpwghlujZcWFWZbaa0jgJ4eO1IWsvNKRFw8bLQUnK2nRa+YmLNvQCA==`
 | SIAM_HEADERS_NODE | `x-api-key:gkenaddAstdanep4MZ5YcjuwNYgB0ds6560`
+
 Alternatively, you can pass these values as arguments inside the code.
 
 ## Getting Started
